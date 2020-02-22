@@ -5,14 +5,23 @@ from sleep_wrap import *
 
 arr = []
 new_dest = "146.48.55.216"
-prec = 0
-delay = 0.005
-conta = 0
+usec = 1000000
+nanosec = 1000000000
+num_pacchetto = 0
 sleep = Sleep()
+
+
+def delay_calculator(current_pkt_time, last_pkt_time, first_pkt_time, start_calculation_time):
+    delay_ideale = (current_pkt_time - last_pkt_time)
+    ideale = current_pkt_time - first_pkt_time
+    attuale = time.time() - start_calculation_time
+    diff = (Decimal(attuale) - ideale)
+    return (delay_ideale - diff)*nanosec
+
 
 packets = rdpcap("/Users/maxuel/Desktop/mandatoo.pcap")
 for pkt in packets:
-    conta += 1
+    num_pacchetto += 1
     if IP in pkt and UDP in pkt and (pkt["UDP"].dport == 5000 or pkt["UDP"].dport == 5001):
         arr.append(pkt)
         #pkt[UDP].payload = RTP(pkt["Raw"].load)
@@ -26,29 +35,24 @@ for pkt in packets:
         #sendp(pkt, iface="lo0", inter=delay)
         #pkt.show()
     else:
-        print(conta)
+        print(num_pacchetto)
 
 prec = arr[0]
-acc = 0
-s = conf.L2socket(iface='lo0')
 pkt_start_time = arr[0].time
+s = conf.L2socket(iface='lo0')
 start = time.time()
 """
 Ho un dato sul tempo indicativo e sul tempo che effettivamente sto impiegando, devo fare aggiustamenti
 """
-for i in arr: #rimango indietro col tempo
-    delay = (i.time - prec.time)*1000000000
-    ideale = i.time - pkt_start_time
-    prec = i
-    attuale = time.time() - start
-    delay -= (attuale - ideale)
-    sleep.nsleep(delay)
+for i in arr:
+    sleep.nsleep(delay_calculator(i.time, prec.time, pkt_start_time, start))
     s.send(i)
+    prec = i
 fine = time.time()
 difference = (fine - start)
 s.close()
-print(difference)
-print(arr[0].time)
+print('Tempo reale trasmissione ' + str(difference))
+print('Tempo ideale ' + str(arr[len(arr)-1].time-arr[0].time))
 
 '''
 Come modificare il pacchetto https://stackoverflow.com/questions/52111663/python-scapy-rtp-header-manipulation-how-can-i-decode-rtp-in-scapy

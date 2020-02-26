@@ -7,16 +7,22 @@ argv[2] l'interfaccia da ascoltare
 """
 #IFACES.show() #metodo per ottenere tutti i nomi delle interfacce su windows disponibili
 path = sys.argv[1]
+interface = sys.argv[2]
+s = conf.L2socket(iface=interface)
 pkts = []
 
+
 def pkt_callback(pkt):
-    udp = pkt[UDP]
-    udp.dport = 5000
-    del pkt[IP].chksum
-    del udp.chksum
-    sendp(pkt, iface="lo0")
+    #udp = pkt[UDP]
+    #udp.dport = 5000
+    #del pkt[IP].chksum
+    #del udp.chksum
+    #s.send(pkt)
     pkts.append(pkt)
 
 
-sniff(iface=sys.argv[2], prn=pkt_callback, filter="not icmp and udp and dst port 6000", timeout=10)
-wrpcap(path, pkts)
+if __name__ == '__main__':
+    sniff(iface=interface, prn=pkt_callback, filter="not icmp and udp and dst port 6000", timeout=10)
+    wrpcap(path, pkts)
+    print(len(pkts))
+    print('Fine Cattura')

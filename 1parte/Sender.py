@@ -10,11 +10,11 @@ class Sender:
     @param port: porta su cui vengono spediti i pacchetti
     """
 
-    def __init__(self, operatore, ip, port):
+    def __init__(self, operatore, interface, ip, port):
         self._operatore = operatore
         self._ip = ip
         self._port = port
-        self._socket = conf.L2socket(iface='lo0')
+        self._socket = conf.L2socket(iface=interface)
 
     def send(self, pkt, indice):
         pkt[IP].dst = self._ip
@@ -22,9 +22,6 @@ class Sender:
         del pkt[IP].chksum
         del pkt[UDP].chksum
         self._operatore.send(self._socket, pkt, indice)
-
-    def setProb(self, prob):
-        self._prob = prob
 
     def setIP(self, dstip):
         self._ip = dstip
@@ -37,9 +34,6 @@ class Sender:
 
     def getPort(self):
         return self._port
-
-    def getProb(self):
-        return self._prob
 
     def getOperatore(self):
         return self._operatore

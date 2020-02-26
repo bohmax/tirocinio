@@ -19,10 +19,13 @@ class Operatore:
         self._delay = delay
 
     def send(self, socket, pkt, indice):
-        if indice < 221 or random.randint(1, 100) > self._prob:
+        if indice != 271: #or random.randint(1, 100) > self._prob
             socket.send(pkt)
         else:
             self._pkt_losted.append(indice)
+
+    def setProb(self, prob):
+        self._prob = prob
 
     def setName(self, name):
         self._name = name
@@ -35,6 +38,9 @@ class Operatore:
 
     def getName(self):
         return self._name
+
+    def getProb(self):
+        return self._prob
 
     def getLoss(self):
         return self._loss

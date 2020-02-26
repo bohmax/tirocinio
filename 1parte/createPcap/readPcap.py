@@ -3,26 +3,18 @@ from scapy.layers.inet import IP, UDP
 from scapy.layers.rtp import RTP
 from sleep_wrap import *
 
+"""
+argv[1] deve contenere il path del file pcap che dovra essere letto
+argv[2] l'interfaccia su cui mandare i pacchetti
+"""
+
 arr = []
 new_dest = "146.48.55.216"
-usec = 1000000
-nanosec = 1000000000
-num_pacchetto = 0
-sleep = Sleep()
+timing = Timing()
 
-
-def delay_calculator(current_pkt_time, last_pkt_time, first_pkt_time, start_calculation_time):
-    delay_ideale = (current_pkt_time - last_pkt_time)
-    ideale = current_pkt_time - first_pkt_time
-    attuale = time.time() - start_calculation_time
-    diff = (Decimal(attuale) - ideale)
-    return (delay_ideale - diff)*nanosec
-
-
-packets = rdpcap("/Users/maxuel/Desktop/7seconds.pcap")
-for pkt in packets:
-    num_pacchetto += 1
-    if IP in pkt and UDP in pkt and (pkt["UDP"].dport == 5000 or pkt["UDP"].dport == 5001):
+packets = rdpcap(sys.argv[1])
+for index, pkt in enumerate(packets):
+    if IP in pkt and UDP in pkt and (pkt["UDP"].dport == 6000 or pkt["UDP"].dport == 5001):
         arr.append(pkt)
         #pkt[UDP].payload = RTP(pkt["Raw"].load)
         #print(pkt.time)
@@ -31,19 +23,19 @@ for pkt in packets:
         #prec = pkt.time
         #pkt[IP].dst = new_dest
         #del pkt[IP].chksum
-        #sendp(pkt, iface="lo0", inter=delay)
+        #sendp(pkt, iface="lo0", inter=delay)h
     else:
-        print(num_pacchetto)
+        print(index)
 
 prec = arr[0]
 pkt_start_time = arr[0].time
-s = conf.L2socket(iface='lo0')
+s = conf.L2socket(iface=sys.argv[2])
 start = time.time()
 """
 Ho un dato sul tempo indicativo e sul tempo che effettivamente sto impiegando, devo fare aggiustamenti
 """
 for i in arr:
-    sleep.nsleep(delay_calculator(i.time, prec.time, pkt_start_time, start))
+    timing.nsleep(timing.delay_calculator(i.time, prec.time, pkt_start_time, start))
     s.send(i)
     prec = i
 fine = time.time()

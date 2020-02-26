@@ -1,7 +1,7 @@
 from scapy.all import *
 from scapy.layers.inet import IP, UDP
 from scapy.layers.rtp import RTP
-from sleep_wrap import *
+from Timing import *
 
 """
 argv[1] deve contenere il path del file pcap che dovra essere letto
@@ -14,7 +14,7 @@ timing = Timing()
 
 packets = rdpcap(sys.argv[1])
 for index, pkt in enumerate(packets):
-    if IP in pkt and UDP in pkt and (pkt["UDP"].dport == 6000 or pkt["UDP"].dport == 5001):
+    if IP in pkt and UDP in pkt and (pkt["UDP"].dport == 5000 or pkt["UDP"].dport == 5001):
         arr.append(pkt)
         #pkt[UDP].payload = RTP(pkt["Raw"].load)
         #print(pkt.time)
@@ -27,7 +27,6 @@ for index, pkt in enumerate(packets):
     else:
         print(index)
 
-prec = arr[0]
 pkt_start_time = arr[0].time
 s = conf.L2socket(iface=sys.argv[2])
 start = time.time()
@@ -35,9 +34,8 @@ start = time.time()
 Ho un dato sul tempo indicativo e sul tempo che effettivamente sto impiegando, devo fare aggiustamenti
 """
 for i in arr:
-    timing.nsleep(timing.delay_calculator(i.time, prec.time, pkt_start_time, start))
+    timing.nsleep(timing.delay_calculator(i.time, pkt_start_time, start))
     s.send(i)
-    prec = i
 fine = time.time()
 difference = (fine - start)
 s.close()

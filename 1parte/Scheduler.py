@@ -2,7 +2,7 @@ from scapy.layers.inet import UDP, IP
 from Operatore import Operatore
 from Sender import Sender
 from scapy.all import *
-from sleep_wrap import *
+from Timing import *
 
 """
 argv[1] deve contenere il path del file pcap che dovra essere letto
@@ -24,14 +24,12 @@ if __name__ == "__main__":
         sender.append(Sender(operatore, sys.argv[2], ip, porta))
 
     packets = rdpcap(sys.argv[1])
-    prec = packets[0]
-    pkt_start_time = prec.time
+    pkt_start_time = packets[0].time
     start = time.time()
     for index, pkt in enumerate(packets):
-        if IP in pkt and UDP in pkt and pkt["UDP"].dport == 6000:
-            timer.nsleep(timer.delay_calculator(pkt.time, prec.time, pkt_start_time, start))
+        if IP in pkt and UDP in pkt and pkt["UDP"].dport == 5000:
+            timer.nsleep(timer.delay_calculator(pkt.time, pkt_start_time, start))
             sender[0].send(pkt, index)
-            prec = pkt
 
     arr = sender[0].getOperatore().getNotSent()
     print(arr)

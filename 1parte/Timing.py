@@ -30,7 +30,7 @@ class Timing:
         else:
             self.windows = True
 
-    def delay_calculator(self, current_pkt_time, last_pkt_time, first_pkt_time, start_calculation_time):
+    def delay_calculator(self, current_pkt_time, first_pkt_time, start_calculation_time):
         ideale = current_pkt_time - first_pkt_time
         attuale = time.time() - start_calculation_time
         return ideale - Decimal(attuale)
@@ -39,9 +39,9 @@ class Timing:
     il Thread dorme per time millisecondi
     @:param time: deve essere compreso tra 0 1000000
     """
-    def usleep(self, time):
+    def usleep(self, temp):
         if not self.windows:
-            self.libc.usleep(c_uint32(time*usec))
+            self.libc.usleep(c_uint32(temp*usec))
         else:
             self.__winsleep(time)
 

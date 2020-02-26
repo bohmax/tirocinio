@@ -6,8 +6,6 @@ if os.name == 'nt':
 import vlc
 
 path = sys.argv[1]
-
-#path = '/Users/maxuel/Desktop/Tirocinio/Video/7secondi.mp4'
 inst = vlc.Instance()
 param = [
     path,

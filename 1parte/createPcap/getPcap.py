@@ -13,16 +13,17 @@ pkts = []
 
 
 def pkt_callback(pkt):
-    #udp = pkt[UDP]
-    #udp.dport = 5000
-    #del pkt[IP].chksum
-    #del udp.chksum
-    #s.send(pkt)
+    udp = pkt[UDP]
+    udp.dport = 5000
+    del pkt[IP].chksum
+    del udp.chksum
+    s.send(pkt)
     pkts.append(pkt)
 
 
 if __name__ == '__main__':
-    sniff(iface=interface, prn=pkt_callback, filter="not icmp and udp and dst port 6000", timeout=10)
+    sniff(opened_socket=L2ListenTcpdump(iface=interface,
+                                        filter="not icmp and udp and dst port 6000"), prn=pkt_callback, timeout=10)
     wrpcap(path, pkts)
     print(len(pkts))
     print('Fine Cattura')

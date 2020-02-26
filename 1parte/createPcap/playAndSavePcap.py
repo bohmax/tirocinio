@@ -16,8 +16,8 @@ def call(string):
 
 
 if __name__ == '__main__':
-    parameters = ['getPcap.py "' + sys.argv[2] + '" "' + sys.argv[3] + '"',
-                  'sendToVLC.py "' + sys.argv[1] + '"']
+    parameters = ['python3 getPcap.py "' + sys.argv[2] + '" "' + sys.argv[3] + '"',
+                  'python3 sendToVLC.py "' + sys.argv[1] + '"']
 
     #for i in processes:
     #    i.start()

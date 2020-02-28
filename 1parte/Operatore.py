@@ -1,6 +1,5 @@
 import random
 
-
 class Operatore:
 
     #contiene gli indici dei pacchetti non inviati

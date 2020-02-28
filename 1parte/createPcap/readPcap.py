@@ -1,29 +1,35 @@
 from scapy.all import *
 from scapy.layers.inet import IP, UDP
 from scapy.layers.rtp import RTP
-from ..Timing import *
+from Timing import Timing
 
 """
 argv[1] deve contenere il path del file pcap che dovra essere letto
 argv[2] l'interfaccia su cui mandare i pacchetti
 """
 
+conf.use_pcap = True
 arr = []
+new_src = "146.48.55.200"
 new_dest = "146.48.55.216"
 timing = Timing()
 
 packets = rdpcap(sys.argv[1])
 for index, pkt in enumerate(packets):
     if IP in pkt and UDP in pkt and (pkt["UDP"].dport == 5000 or pkt["UDP"].dport == 5001):
-        arr.append(pkt)
         #pkt[UDP].payload = RTP(pkt["Raw"].load)
         #print(pkt.time)
         #if prec is not 0:
             #delay = (pkt.time - prec)
         #prec = pkt.time
-        #pkt[IP].dst = new_dest
-        #del pkt[IP].chksum
-        #sendp(pkt, iface="lo0", inter=delay)h
+        #ippack = IP(pkt)/UDP(pkt)
+        #ippack.show()
+        #ippack[IP].src = new_src
+        pkt[IP].dst = new_dest
+        del pkt[IP].chksum
+        #ippack.time = pkt.time
+        arr.append(pkt)
+        #sendp(pkt, iface="lo0", inter=delay)
     else:
         print(index)
 

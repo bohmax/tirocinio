@@ -1,8 +1,8 @@
 from scapy.layers.inet import UDP, IP
-from .Operatore import Operatore
-from .Sender import Sender
+from Operatore import Operatore
+from Sender import Sender
 from scapy.all import *
-from .Timing import *
+from Timing import *
 
 """
 argv[1] deve contenere il path del file pcap che dovra essere letto
@@ -12,8 +12,9 @@ argv[2] l'interfaccia su cui mandare i pacchetti
 sender = []
 #nomi_operatori = ['Vodafone', 'Tim','Wind']
 nomi_operatori = ['Vodafone']
+ip_cnr = '146.48.55.216'
 ip = "127.0.0.1"
-porta = 5000
+porta = 4999
 
 
 if __name__ == "__main__":
@@ -23,13 +24,14 @@ if __name__ == "__main__":
         operatore = Operatore(i, 2, 0, 1)
         sender.append(Sender(operatore, sys.argv[2], ip, porta))
 
-    packets = rdpcap(sys.argv[1])
+    packets = rdpcap(sys.argv[1], 1)
     pkt_start_time = packets[0].time
     start = time.time()
-    for index, pkt in enumerate(packets):
-        if IP in pkt and UDP in pkt and pkt["UDP"].dport == 5000:
+    for index, pkt in enumerate(PcapReader(sys.argv[1])):
+        if IP in pkt and UDP in pkt: #and pkt["UDP"].dport == 5000:
             timer.nsleep(timer.delay_calculator(pkt.time, pkt_start_time, start))
             sender[0].send(pkt, index)
+            print('spedito')
 
     arr = sender[0].getOperatore().getNotSent()
     print(arr)

@@ -1,44 +1,33 @@
 from scapy.all import *
 from scapy.layers.inet import IP, UDP
-from scapy.layers.rtp import RTP
-from Timing import Timing
+from Progetto.Timing import Timing
 
 """
 argv[1] deve contenere il path del file pcap che dovra essere letto
 argv[2] l'interfaccia su cui mandare i pacchetti
 """
 
-conf.use_pcap = True
 arr = []
-new_src = "146.48.55.200"
-new_dest = "146.48.55.216"
+ip_cnr = "146.48.55.216"
+ip_home_src = "192.168.1.125"
+ip_home_dst = "192.168.1.216"
 timing = Timing()
 
-packets = rdpcap(sys.argv[1])
+packets = rdpcap(sys.argv[1], 1000)
 for index, pkt in enumerate(packets):
-    if IP in pkt and UDP in pkt and (pkt["UDP"].dport == 5000 or pkt["UDP"].dport == 5001):
+    if IP in pkt and UDP in pkt and pkt["UDP"].dport == 5000:
         #pkt[UDP].payload = RTP(pkt["Raw"].load)
-        #print(pkt.time)
-        #if prec is not 0:
-            #delay = (pkt.time - prec)
-        #prec = pkt.time
-        #ippack = IP(pkt)/UDP(pkt)
-        #ippack.show()
-        #ippack[IP].src = new_src
-        pkt[IP].dst = new_dest
-        del pkt[IP].chksum
-        #ippack.time = pkt.time
+        #pkt[IP].src = ip_home_src
+        #pkt[IP].dst = ip_home_dst
+        #del pkt[IP].chksum
         arr.append(pkt)
-        #sendp(pkt, iface="lo0", inter=delay)
     else:
         print(index)
 
-pkt_start_time = arr[0].time
+print("Inizio a inoltrare")
 s = conf.L2socket(iface=sys.argv[2])
+pkt_start_time = arr[0].time
 start = time.time()
-"""
-Ho un dato sul tempo indicativo e sul tempo che effettivamente sto impiegando, devo fare aggiustamenti
-"""
 for i in arr:
     timing.nsleep(timing.delay_calculator(i.time, pkt_start_time, start))
     s.send(i)

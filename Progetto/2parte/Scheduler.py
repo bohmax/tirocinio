@@ -2,7 +2,7 @@ from scapy.layers.inet import UDP, IP
 from Operatore import Operatore
 from Sender import Sender
 from scapy.all import *
-from Progetto.Timing import *
+from Timing import *
 
 """
 argv[1] deve contenere il path del file pcap che dovra essere letto

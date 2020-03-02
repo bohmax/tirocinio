@@ -8,6 +8,7 @@ from Timing import *
 argv[1] deve contenere il path del file pcap che dovra essere letto
 argv[2] l'interfaccia su cui mandare i pacchetti
 argv[3] Serve per specificare l'ip da utilizzare, 0 se mi trovo a caso, qualsialsi altro valore se sono al cnr
+argv[4] Specifica la probabilita con la quale saranno scartati i pacchetti
 """
 
 sender = []
@@ -16,6 +17,7 @@ nomi_operatori = ['Vodafone']
 ip = "192.168.1.216"
 if sys.argv[3] == 'cnr':
     ip = '146.48.55.216'
+prob = int(sys.argv[4])
 porta = 4999
 
 
@@ -23,17 +25,22 @@ if __name__ == "__main__":
     timer = Timing()
     for i in nomi_operatori:
         porta += 1
-        operatore = Operatore(i, 2, 0, 1)
+        operatore = Operatore(name=i, prob=prob, loss=0, delay=0)
         sender.append(Sender(operatore, sys.argv[2], ip, porta))
 
     packets = rdpcap(sys.argv[1], 1)
     pkt_start_time = packets[0].time
     start = time.time()
+    numero_totale_pkt = 0
     for index, pkt in enumerate(PcapReader(sys.argv[1])):
-        if IP in pkt and UDP in pkt: #and pkt["UDP"].dport == 5000:
-            timer.nsleep(timer.delay_calculator(pkt.time, pkt_start_time, start))
-            sender[0].send(pkt, index)
+        if IP in pkt and UDP in pkt and pkt[UDP].dport == 5000:
+            try:
+                timer.nsleep(timer.delay_calculator(pkt.time, pkt_start_time, start))
+                sender[0].send(pkt, index)
+            except KeyboardInterrupt:
+                numero_totale_pkt = index
+                break
 
     arr = sender[0].getOperatore().getNotSent()
     print(arr)
-    print('lenghezza elementi non inviati ' + str(len(arr)))
+    print('Numero di elementi non inviati ' + str(len(arr)) + ' su ' + str(numero_totale_pkt) + ' pacchetti')

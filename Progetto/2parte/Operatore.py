@@ -19,7 +19,7 @@ class Operatore:
         self._delay = delay
 
     def send(self, socket, pkt, indice):
-        if indice != 271: #or random.randint(1, 100) > self._prob
+        if random.randint(1, 100) > self._prob:
             socket.send(pkt)
         else:
             self._pkt_losted.append(indice)

@@ -13,16 +13,18 @@ class Sender:
 
     def __init__(self, operatore, interface, ip, port):
         self._operatore = operatore
-        self._mac_address = get_if_hwaddr(sys.argv[2])
+        self._mac_address = get_if_hwaddr(interface)
+        self._src_ip = get_if_addr(interface)
         self._ip = ip
         self._port = port
         self._socket = conf.L2socket(iface=interface)
 
     def send(self, pkt, indice):
         pkt[Ether].src = self._mac_address
-        del pkt[Ether].dst
+        pkt[IP].src = self._src_ip
         pkt[IP].dst = self._ip
         pkt[UDP].dport = self._port
+        del pkt[Ether].dst
         del pkt[IP].chksum
         del pkt[UDP].chksum
         self._operatore.send(self._socket, pkt, indice)

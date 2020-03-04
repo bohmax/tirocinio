@@ -1,5 +1,5 @@
 from scapy.layers.inet import UDP, IP
-from Operatore import Operatore
+from Sender import Operatore
 from Sender import Sender
 from scapy.all import *
 from Timing import *

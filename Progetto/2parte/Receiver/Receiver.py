@@ -1,23 +1,21 @@
 import base64
-
 import numpy as np
+import cv2.cv2 as cv2
 from scapy.all import *
 from scapy.layers.inet import IP, UDP
 from scapy.layers.rtp import RTP
-import cv2.cv2 as cv2
 
 """
 argv[1] deve contenere il path del file pcap che dovra essere letto
 """
 os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "protocol_whitelist;file,rtp,udp"
-path = sys.argv[2]
-print(sys.argv[2])
+#path = sys.argv[2]
+#print(sys.argv[2])
 
 if __name__ == "__main__":
+    '''
     cap = cv2.VideoCapture(path)
-    print('yey')
     success, image = cap.read()
-    print('letto')
     count = 0
     while success:
         cv2.imwrite("/Users/maxuel/Desktop/files/frame%d.jpg" % count, image)  # save frame as JPEG file
@@ -25,15 +23,39 @@ if __name__ == "__main__":
         print('Read a new frame: ', success)
         count += 1
     '''
-    payloads = [bytearray()]
+    #payloads = [bytearray()]
+    payload = bytearray()
     bind_layers(UDP, RTP, dport=5000)
+    idr_nal = 0b00000000  # [ 3 NAL UNIT BITS | 5 FRAGMENT TYPE BITS] 8 bits
     for index, pkt in enumerate(PcapReader(sys.argv[1])):
         if IP in pkt and UDP in pkt and pkt[UDP].dport == 5000:
-            payloads[len(payloads)-1] += pkt[Raw].load
-            #pkt[Raw].show()
+            # https://stackoverflow.com/questions/7665217/how-to-process-raw-udp-packets-so-that-they-can-be-decoded-by-a-decoder-filter-i
+            #prendo H264 FRAGMENT
+
+            data = pkt[Raw].load
+            fragment_type = data[0] & 0x1F  # spero che il valore sia 28
+            nal_type = data[1] & 0x1F
+            start_bit = data[1] & 0x80  # 128 se e' il primo pacchetto del frame 0 altrimenti
+            end_bit = data[1] & 0x40  # 64 se e' l ultimo pacchetto 0 altrimenti
+            #payloads[len(payloads)-1] += pkt[Raw].load
+
+            if fragment_type == 7:  # non so ancora cosa voglia dire
+                print('pacchetto numero ' + str(index))
+            elif fragment_type == 28:  # e' un frame video
+                if start_bit == 128:
+                    idr_nal = data[0] & 0x7
+                    print('tac ' + str(idr_nal))
+                elif idr_nal != 0:
+                    print(bytes(chr(((idr_nal << 5) + fragment_type))))
+                    payload[0:0] = bytes((idr_nal << 5) + fragment_type)  # fa una prepend
+                    idr_nal = idr_nal >> 8
+                    # ora devo scrivere questo valore in un buffer
+            payload += data[2:]  # rimuove gli header del payload e contiene solo i dati successivi
             if pkt[RTP].marker == 1:
-                payloads.append(bytearray())
+                #payloads.append(bytearray())
+                print(payload)
                 break
+    '''
     for i in payloads:
         print('gosh')
         jpg_original = base64.b64decode(i)

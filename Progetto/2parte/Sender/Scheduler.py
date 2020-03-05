@@ -1,5 +1,5 @@
 from scapy.layers.inet import UDP, IP
-from Sender import Operatore
+from Operatore import Operatore
 from Sender import Sender
 from scapy.all import *
 from Timing import *
@@ -7,7 +7,7 @@ from Timing import *
 """
 argv[1] deve contenere il path del file pcap che dovra essere letto
 argv[2] l'interfaccia su cui mandare i pacchetti
-argv[3] Serve per specificare l'ip da utilizzare, 0 se mi trovo a caso, qualsialsi altro valore se sono al cnr
+argv[3] Serve per specificare l'ip a cui spedire, windows se mi trovo sul mac a casa, cnr, e windows se devo spedire al mac
 argv[4] Specifica la probabilita con la quale saranno scartati i pacchetti
 """
 
@@ -17,6 +17,8 @@ nomi_operatori = ['Vodafone']
 ip = "192.168.1.216"
 if sys.argv[3] == 'cnr':
     ip = '146.48.55.216'
+elif sys.argv[3] == 'mac':
+    ip = '192.168.1.125'
 prob = int(sys.argv[4])
 porta = 4999
 

@@ -1,4 +1,6 @@
 import base64
+from binascii import unhexlify
+
 import numpy as np
 import cv2.cv2 as cv2
 from scapy.all import *
@@ -44,16 +46,17 @@ if __name__ == "__main__":
             elif fragment_type == 28:  # e' un frame video
                 if start_bit == 128:
                     idr_nal = data[0] & 0x7
-                    print('tac ' + str(idr_nal))
                 elif idr_nal != 0:
-                    print(bytes(chr(((idr_nal << 5) + fragment_type))))
-                    payload[0:0] = bytes((idr_nal << 5) + fragment_type)  # fa una prepend
+                    byte_idr_nal = ((idr_nal << 5) + fragment_type).to_bytes(1, byteorder=sys.byteorder)
+                    payload[0:0] = byte_idr_nal  # fa una prepend
                     idr_nal = idr_nal >> 8
                     # ora devo scrivere questo valore in un buffer
             payload += data[2:]  # rimuove gli header del payload e contiene solo i dati successivi
             if pkt[RTP].marker == 1:
                 #payloads.append(bytearray())
-                print(payload)
+                nparr = np.frombuffer(payload, dtype="uint8")
+                img_np = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                print(img_np)
                 break
     '''
     for i in payloads:

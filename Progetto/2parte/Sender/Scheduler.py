@@ -19,6 +19,8 @@ if sys.argv[3] == 'cnr':
     ip = '146.48.55.216'
 elif sys.argv[3] == 'mac':
     ip = '192.168.1.125'
+elif sys.argv[3] == 'myself':
+    ip = '192.168.1.131'
 prob = int(sys.argv[4])
 porta = 4999
 
@@ -36,6 +38,7 @@ if __name__ == "__main__":
     numero_totale_pkt = 0
     for index, pkt in enumerate(PcapReader(sys.argv[1])):
         if IP in pkt and UDP in pkt and pkt[UDP].dport == 5000:
+            print(index)
             try:
                 timer.nsleep(timer.delay_calculator(pkt.time, pkt_start_time, start))
                 sender[0].send(pkt, index)

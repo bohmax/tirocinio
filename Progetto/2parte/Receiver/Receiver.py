@@ -17,9 +17,9 @@ os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "protocol_whitelist;file,rtp,udp"
 
 
 def starter(to_add):
-    for j in range(2):
-        to_add += (0).to_bytes(1, byteorder=sys.byteorder)
-    to_add += (1).to_bytes(1, byteorder=sys.byteorder)
+    zero = (0).to_bytes(1, byteorder=sys.byteorder)
+    uno = (1).to_bytes(1, byteorder=sys.byteorder)
+    to_add += zero + zero + uno
 
 
 if __name__ == "__main__":
@@ -39,9 +39,22 @@ if __name__ == "__main__":
     bind_layers(UDP, RTP, dport=5000)
     num_frame = 0
     start_frame = 0
-    lenght = 0
-    #idr_nal = 0b00000000  # [ 3 NAL UNIT BITS | 5 FRAGMENT TYPE BITS] 8 bits
     inizialized = False
+
+    '''
+    Devo iniziare a unificare quando ricevo pacchetti Header(nal type == 5)
+    i pacchetti P sono con nal_type == 1
+    Gli header sono preceduti da pacchetti SPS e PPS rispettivamente fragment_type == 7 fragment_type == 8
+    il formato deve essere
+    00 00 01 [SPS] 00 00 01 [PPS] 00 00 01 [DATA] in data bisogna togliere il nal header
+
+    Inizio il mio algoritmo(venendo incontro in modo furbo al pcap di prova)
+    scarto tutti i pacchetti finche non trovo un sps e pps
+    cerco header e attacco idr nal e nal type, per i pacchetti header questo valore è sempre lo stesso
+    inserisco poi il payload togliendo i primi due byte(contengono gli header)
+    se incontro poi altri sps e pps li scarto(per lo stream in analisi sono sempre uguali)
+    '''
+
     for index, pkt in enumerate(PcapReader(sys.argv[1])):
         if IP in pkt and UDP in pkt and pkt[UDP].dport == 5000:
             # https://stackoverflow.com/questions/7665217/how-to-process-raw-udp-packets-so-that-they-can-be-decoded-by-a-decoder-filter-i
@@ -49,47 +62,45 @@ if __name__ == "__main__":
 
             data = pkt[Raw].load
             payload_type = pkt[RTP].payload_type
-            lenght += len(data)
-            #fragment_size = lenght - 2
 
             #FU - A - -HEADER
             forbidden = data[0] & 0x80 >> 7
             nri = data[0] & 0x60 >> 5
             fragment_type = data[0] & 0x1F  # spero che il valore sia 28
 
-            #Nal header
-            start_bit = data[1] & 0x80  # 128 se e' il primo pacchetto del frame 0 altrimenti
-            end_bit = data[1] & 0x40  # 64 se e' l ultimo pacchetto 0 altrimenti
-            reserved = data[1] & 0x20 >> 5
-            nal_type = data[1] & 0x1F
-
-            #payloads[len(payloads)-1] += pkt[Raw].load
-
-            if fragment_type != 28 and not inizialized:
-                starter(metadata)
-                metadata += pkt[Raw].load  # SPS informaition && PPS information
+            if not inizialized:
+                if fragment_type == 7:
+                    starter(metadata)
+                    metadata += pkt[Raw].load  # SPS informaition
                 if fragment_type == 8:
-                    metadata += payload
-                    payload = metadata
+                    starter(metadata)
+                    metadata += pkt[Raw].load  # PPS information
                     inizialized = True
-                    #f = open("/Users/maxuel/Desktop/hope", "wb")
-                    #f.write(payload)
-                    #break
-            else:  # e' un frame video fragment_type = 28
+                continue
+
+            #informazioni per lo streaming ottenuto, inizio concatenazione
+            if fragment_type == 28:
+                #Nal header
+                start_bit = data[1] & 0x80  # 128 se e' il primo pacchetto del frame 0 altrimenti
+                end_bit = data[1] & 0x40  # 64 se e' l ultimo pacchetto 0 altrimenti
+                reserved = data[1] & 0x20 >> 5
+                nal_type = data[1] & 0x1F
+
                 if start_bit == 128:
-                    print('started ' + str(start_frame))
-                    start_frame += 1
+                    if nal_type == 5:
+                        if len(payload) != 0:
+                            print(num_frame)
+                            f = open("/Users/maxuel/Desktop/hope", "wb")
+                            f.write(payload)
+                            break
+                        payload += metadata
                     idr_nal = data[0] & 0xE0  # 3 NAL UNIT BITS
-                    nal = idr_nal | nal_type
+                    nal = idr_nal | nal_type  # [ 3 NAL UNIT BITS | 5 FRAGMENT TYPE BITS] 8 bits
                     starter(payload)
                     payload += nal.to_bytes(1, byteorder=sys.byteorder)  # header per il frame
-                payload += data[2:]  # rimuove gli header del payload e contiene solo i dati successivi
-                if pkt[RTP].marker == 1:
+                elif end_bit == 64:
                     num_frame += 1
-                    if num_frame == 18 and inizialized:
-                        f = open("/Users/maxuel/Desktop/hope", "wb")
-                        f.write(metadata)
-                        break
+                payload += data[2:]  # rimuove gli header del payload e contiene solo i dati successivi
 
     '''
     print('gosh')

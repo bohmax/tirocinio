@@ -38,6 +38,7 @@ if __name__ == "__main__":
     metadata = bytearray()
     bind_layers(UDP, RTP, dport=5000)
     num_frame = 0
+    num_gop = 0
     start_frame = 0
     inizialized = False
 
@@ -88,19 +89,26 @@ if __name__ == "__main__":
 
                 if start_bit == 128:
                     if nal_type == 5:
+                        print('start new gop ' + str(index))
                         if len(payload) != 0:
-                            print(num_frame)
                             f = open("/Users/maxuel/Desktop/hope", "wb")
                             f.write(payload)
-                            break
+                            f.close()
+                            num_gop += 1
+                            payload = bytearray()
+                            if num_gop == 2:
+                                break
+
                         payload += metadata
                     idr_nal = data[0] & 0xE0  # 3 NAL UNIT BITS
                     nal = idr_nal | nal_type  # [ 3 NAL UNIT BITS | 5 FRAGMENT TYPE BITS] 8 bits
                     starter(payload)
                     payload += nal.to_bytes(1, byteorder=sys.byteorder)  # header per il frame
                 elif end_bit == 64:
-                    num_frame += 1
+                    num_frame += 1  # solo per dati statistici
                 payload += data[2:]  # rimuove gli header del payload e contiene solo i dati successivi
+
+
 
     '''
     print('gosh')

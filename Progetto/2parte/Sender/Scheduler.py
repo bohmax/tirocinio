@@ -11,6 +11,7 @@ argv[3] Serve per specificare l'ip a cui spedire, windows se mi trovo sul mac a 
 argv[4] Specifica la probabilita con la quale saranno scartati i pacchetti
 """
 
+conf.use_pcap = True  # permette di usare subito un nuovo socket appena lo creo
 sender = []
 #nomi_operatori = ['Vodafone', 'Tim','Wind']
 nomi_operatori = ['Vodafone']
@@ -20,7 +21,7 @@ if sys.argv[3] == 'cnr':
 elif sys.argv[3] == 'mac':
     ip = '192.168.1.125'
 elif sys.argv[3] == 'myself':
-    ip = '192.168.1.131'
+    ip = '192.168.1.91'
 prob = int(sys.argv[4])
 porta = 4999
 

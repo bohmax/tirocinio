@@ -12,12 +12,12 @@ class Sender:
     """
 
     def __init__(self, operatore, interface, ip, port):
+        self._socket = conf.L2socket(iface=interface)
         self._operatore = operatore
-        self._mac_address = get_if_hwaddr(interface)
-        self._src_ip = get_if_addr(interface)
+        self._mac_address = get_if_hwaddr(conf.iface)
+        self._src_ip = get_if_addr(conf.iface)
         self._ip = ip
         self._port = port
-        self._socket = conf.L2socket(iface=interface)
 
     def send(self, pkt, indice):
         pkt[Ether].src = self._mac_address

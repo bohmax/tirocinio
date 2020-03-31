@@ -29,6 +29,7 @@
 		0C05BD36243228C7006CE112 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
 		0C05BD3E243262B2006CE112 /* libpcap.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libpcap.tbd; path = usr/lib/libpcap.tbd; sourceTree = SDKROOT; };
 		0C05BD402432A1A9006CE112 /* rtp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = rtp.h; sourceTree = "<group>"; };
+		0C95BAC624336A9F0096B4B6 /* define.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = define.h; sourceTree = "<group>"; };
 		0CAFC8852432FAD20039289A /* receiver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = receiver.h; sourceTree = "<group>"; };
 		0CAFC8862432FAEF0039289A /* utility.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = utility.h; sourceTree = "<group>"; };
 		0CAFC8872432FB7A0039289A /* receiver.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = receiver.c; sourceTree = "<group>"; };
@@ -73,6 +74,7 @@
 				0CAFC8862432FAEF0039289A /* utility.h */,
 				0CAFC8872432FB7A0039289A /* receiver.c */,
 				0CAFC8892432FDC30039289A /* string.h */,
+				0C95BAC624336A9F0096B4B6 /* define.h */,
 			);
 			path = ImagePicker;
 			sourceTree = "<group>";
@@ -263,6 +265,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				GCC_C_LANGUAGE_STANDARD = c99;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -271,6 +274,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				GCC_C_LANGUAGE_STANDARD = c99;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;

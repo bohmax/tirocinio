@@ -8,6 +8,8 @@
 
 #include "receiver.h"
 
+string metadata; //dovrà contenere SPS e PPS
+string payload; //dovrà contenere un intero GOP
 int inizialized = 0; //ci dice se è stato trovato SPS e PPS
 int num_pkt = 0; //numero dei pacchetti arrivati
 int num_frame = 0; //numero di frame analizzati
@@ -65,11 +67,12 @@ void sniff(u_char *useless,const struct pcap_pkthdr* pkthdr,const u_char*
             if (nal_type == 5){
                 printf("start new gop %d\n", num_pkt);
                 if (payload.size != 0){
-                    FILE* f = fopen("/Users/maxuel/Desktop/hope", "wb");
-                    fwrite(payload.value, 1, payload.size, f);
-                    fclose(f);
+                    FILE* f = NULL;
+                    if ((f = fopen("/Users/maxuel/Desktop/hope", "wb"))){
+                        fwrite(payload.value, 1, payload.size, f);
+                        fclose(f);
+                    }
                     num_gop += 1;
-                    memset(payload.value, '\0', payload.size); //inizializzo gop
                     payload.size = 0;
                     if (num_gop == 2){
                         pcap_breakloop(handle);

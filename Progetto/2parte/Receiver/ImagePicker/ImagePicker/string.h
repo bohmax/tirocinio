@@ -9,9 +9,11 @@
 #ifndef string_h
 #define string_h
 
+#include "utility.h"
+
 typedef struct stringa {
     int size;
-    u_char* value;
+    u_char value[GOPM];
 }string;
 
 #endif /* string_h */

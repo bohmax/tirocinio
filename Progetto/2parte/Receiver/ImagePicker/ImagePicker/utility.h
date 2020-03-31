@@ -19,15 +19,12 @@
 #include <net/ethernet.h>
 #include <netinet/ip.h>
 #include <netinet/udp.h>
+#include "define.h"
 #include "rtp.h"
 #include "string.h"
 #include "receiver.h"
-#define ERRORSYSHEANDLER(r,c,d,e) if((r=c)==d) { perror(e);exit(errno); }
-#define SYSFREE(r,c,d,e) if((r=c)!=d) { perror(e);exit(errno); }
-#define GOPM 400000 //dimensioni di un GOP medio moltiplicato per 2
 
-extern string metadata; //dovrà contenere SPS e PPS
-extern string payload; //dovrà contenere un intero GOP
 extern pcap_t* handle;    /* packet capture handle */
+extern char* path_file;   /* path del file su cui viene salvato lo streaming*/
 
 #endif /* utility_h */

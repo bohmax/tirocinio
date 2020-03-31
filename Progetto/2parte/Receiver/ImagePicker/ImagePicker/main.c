@@ -8,8 +8,7 @@
 
 #include "utility.h"
 
-string metadata;
-string payload;
+char* path_file = NULL; /* definita in utility.h */
 
 //thread per la gestione dei segnali per far terminare il programma
 void* segnali(void *arg);
@@ -42,19 +41,7 @@ pcap_if_t* find_device(pcap_if_t* alldevs, char* name){
     return NULL;
 }
 
-void set_strings(){
-    u_char met[500];
-    u_char pay[GOPM];
-    metadata.value = met;
-    payload.value = pay;
-    memset(metadata.value, '\0', 500); //inizializzo metadata
-    memset(payload.value, '\0', GOPM); //inizializzo gop
-    metadata.size = 0;
-    payload.size = 0;
-}
-
-void set_handler(char device_name[], char filter[], char errbuf[]){
-    struct bpf_program fp;        /* to hold compiled program */
+void set_handler(char device_name[], struct bpf_program* fp, char filter[], char errbuf[]){
     bpf_u_int32 pMask;            /* subnet mask */
     bpf_u_int32 pNet;             /* ip address*/
     
@@ -67,12 +54,12 @@ void set_handler(char device_name[], char filter[], char errbuf[]){
         }
     }
     pcap_lookupnet(device_name, &pNet, &pMask, errbuf);
-    if(pcap_compile(handle, &fp, filter, 0, pNet) == -1){ //usato per compilare la stringa str per il bpf filter
+    if(pcap_compile(handle, fp, filter, 0, pNet) == -1){ //usato per compilare la stringa str per il bpf filter
         printf("\npcap_compile() failed\n");
         exit(1);
     }
     // Set the filter compiled above
-    if(pcap_setfilter(handle, &fp) == -1){
+    if(pcap_setfilter(handle, fp) == -1){
         printf("\npcap_setfilter() failed\n");
         exit(1);
     }
@@ -99,19 +86,21 @@ int main(int argc, const char * argv[]) {
     char *dev_name = NULL;   /* capture device name */
     char errbuf[PCAP_ERRBUF_SIZE];  /* error buffer */
     char stringfilter[] = "not icmp and udp and dst port 5000";
-    pcap_if_t *alldevs;
+    pcap_if_t *alldevs = NULL;
     pcap_if_t *device = NULL;
+    struct bpf_program fp;        /* to hold compiled program */
     pthread_t listener, segnal; //thread listener e segnali
-    if (argc != 2) exit(EXIT_FAILURE);
+    if (argc != 3) exit(EXIT_FAILURE);
+    dev_name = (char*) argv[1];
+    path_file = (char*) argv[2];
     if(pcap_findalldevs(&alldevs, errbuf)==-1) exit(EXIT_FAILURE);
     set_signal();
-    set_strings();
-    SYSFREE(notused,pthread_create(&segnal,NULL,&segnali,NULL),0,"thread")
     //avvio thread che gestisce i segnali
-    dev_name =(char*) argv[1];
+    SYSFREE(notused,pthread_create(&segnal,NULL,&segnali,NULL),0,"thread")
+    
     device = find_device(alldevs, dev_name); //se è null provo a leggere offline
     // fetch the network address and network mask
-    set_handler(dev_name, stringfilter, errbuf);
+    set_handler(dev_name, &fp, stringfilter, errbuf);
     printf("Sniffing on device: %s\n", dev_name);
     // For every packet received, call the callback function
     // ctrl-z to stop sniffing
@@ -121,6 +110,7 @@ int main(int argc, const char * argv[]) {
     pthread_kill(segnal, SIGINT); //manda un segnale al thread
     SYSFREE(notused,pthread_join(segnal,NULL),0,"join 1")
     printf("Uscita dal programma\n");
+    pcap_freecode(&fp);
     pcap_close(handle);
     pcap_freealldevs(alldevs);
     return 0;

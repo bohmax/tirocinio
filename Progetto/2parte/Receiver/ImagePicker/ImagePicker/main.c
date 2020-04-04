@@ -118,6 +118,6 @@ int main(int argc, const char * argv[]) {
     clock_t begin = clock();
     create_image();
     clock_t end = clock();
-    printf("Tempo di esezione %f\n", (double)(end - begin) / CLOCKS_PER_SEC);
+    printf("Tempo di esecuzione %f\n", (double)(end - begin) / CLOCKS_PER_SEC);
     return 0;
 }

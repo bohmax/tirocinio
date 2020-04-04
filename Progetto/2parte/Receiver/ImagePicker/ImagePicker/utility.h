@@ -32,5 +32,6 @@
 
 extern pcap_t* handle;    /* packet capture handle */
 extern char* path_file;   /* path del file su cui viene salvato lo streaming*/
+extern char* path_image;   /* path su cui saranno salvate le immagini*/
 
 #endif /* utility_h */

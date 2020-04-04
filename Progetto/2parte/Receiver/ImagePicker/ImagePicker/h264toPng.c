@@ -22,7 +22,7 @@ void logging(const char *fmt, ...){
 void savePNG(AVPacket* packet, int FrameNo){
     FILE *PNGFile;
     char PNGName[128];
-    sprintf(PNGName, "%s-%06d.png", path_file, FrameNo);
+    sprintf(PNGName, "%sframe-%06d.png", path_image, FrameNo);
     PNGFile = fopen(PNGName, "wb");
     fwrite(packet->data, 1, packet->size, PNGFile);
     fclose(PNGFile);
@@ -39,7 +39,7 @@ int decode_to_png(AVCodecContext *pCodecCtx, AVFrame *pFrame, int FrameNo) {
         logging("failed to allocated memory for AVPacket");
         return -1;
     }
-    while (response >= 0) {
+    if (response >= 0) {
         response = avcodec_receive_packet(pngContext, packet);
         if (response == AVERROR(EAGAIN) || response == AVERROR_EOF){
             return (response==AVERROR(EAGAIN)) ? 0:1;
@@ -50,11 +50,8 @@ int decode_to_png(AVCodecContext *pCodecCtx, AVFrame *pFrame, int FrameNo) {
         }
         
         savePNG(packet, FrameNo);
-        av_packet_unref(packet);
+        av_packet_free(&packet);
     }
-    
-    av_packet_free(&packet);
-    avcodec_close(pngContext);
     return 0;
 }
 
@@ -67,7 +64,7 @@ int pixel_to_rgb24(AVCodecContext *pCodecCtx, AVFrame *pFrame, int FrameNo) {
     
     int numBytes=avpicture_get_size(AV_PIX_FMT_RGB24, pCodecCtx->width, pCodecCtx->height);
     
-    uint8_t buffer[numBytes];
+    uint8_t* buffer = malloc(sizeof(uint8_t)*numBytes);
     
     // Assign appropriate parts of buffer to image planes in pFrameRGB
     avpicture_fill((AVPicture *)pFrameRGB, buffer, AV_PIX_FMT_RGB24, pCodecCtx->width, pCodecCtx->height);
@@ -89,6 +86,7 @@ int pixel_to_rgb24(AVCodecContext *pCodecCtx, AVFrame *pFrame, int FrameNo) {
     decode_to_png(pCodecCtx, pFrameRGB, FrameNo);
     av_frame_free(&pFrameRGB);
     sws_freeContext(img_convert_ctx);
+    free(buffer);
     //SaveFrame(pFrameRGB, pCodecCtx->width, pCodecCtx->height, FrameNo);
     return 0;
 }

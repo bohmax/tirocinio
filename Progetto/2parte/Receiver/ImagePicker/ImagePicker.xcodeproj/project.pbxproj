@@ -10,6 +10,12 @@
 		0C05BD37243228C7006CE112 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 0C05BD36243228C7006CE112 /* main.c */; };
 		0C05BD3F243262B2006CE112 /* libpcap.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 0C05BD3E243262B2006CE112 /* libpcap.tbd */; };
 		0CAFC8882432FB7A0039289A /* receiver.c in Sources */ = {isa = PBXBuildFile; fileRef = 0CAFC8872432FB7A0039289A /* receiver.c */; };
+		0CD6DDA4243426B100C6FCC6 /* libavcodec.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0C7465DB243425F8002E2B0D /* libavcodec.a */; };
+		0CD6DDA5243426D500C6FCC6 /* libswscale.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0C7465DD243425F8002E2B0D /* libswscale.a */; };
+		0CD6DDA6243426D500C6FCC6 /* libswresample.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0C7465DC243425F8002E2B0D /* libswresample.a */; };
+		0CD6DDA7243426D500C6FCC6 /* libavutil.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0C7465DE243425F8002E2B0D /* libavutil.a */; };
+		0CD6DDA8243426D500C6FCC6 /* libavformat.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0C7465DA243425F8002E2B0D /* libavformat.a */; };
+		0CD6DDAB2437ADAD00C6FCC6 /* h264toPng.c in Sources */ = {isa = PBXBuildFile; fileRef = 0CD6DDAA2437ADAD00C6FCC6 /* h264toPng.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -29,11 +35,18 @@
 		0C05BD36243228C7006CE112 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
 		0C05BD3E243262B2006CE112 /* libpcap.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libpcap.tbd; path = usr/lib/libpcap.tbd; sourceTree = SDKROOT; };
 		0C05BD402432A1A9006CE112 /* rtp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = rtp.h; sourceTree = "<group>"; };
+		0C7465DA243425F8002E2B0D /* libavformat.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libavformat.a; path = ../../../../usr/local/Cellar/ffmpeg/4.2.2_2/lib/libavformat.a; sourceTree = "<group>"; };
+		0C7465DB243425F8002E2B0D /* libavcodec.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libavcodec.a; path = ../../../../usr/local/Cellar/ffmpeg/4.2.2_2/lib/libavcodec.a; sourceTree = "<group>"; };
+		0C7465DC243425F8002E2B0D /* libswresample.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libswresample.a; path = ../../../../usr/local/Cellar/ffmpeg/4.2.2_2/lib/libswresample.a; sourceTree = "<group>"; };
+		0C7465DD243425F8002E2B0D /* libswscale.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libswscale.a; path = ../../../../usr/local/Cellar/ffmpeg/4.2.2_2/lib/libswscale.a; sourceTree = "<group>"; };
+		0C7465DE243425F8002E2B0D /* libavutil.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libavutil.a; path = ../../../../usr/local/Cellar/ffmpeg/4.2.2_2/lib/libavutil.a; sourceTree = "<group>"; };
 		0C95BAC624336A9F0096B4B6 /* define.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = define.h; sourceTree = "<group>"; };
 		0CAFC8852432FAD20039289A /* receiver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = receiver.h; sourceTree = "<group>"; };
 		0CAFC8862432FAEF0039289A /* utility.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = utility.h; sourceTree = "<group>"; };
 		0CAFC8872432FB7A0039289A /* receiver.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = receiver.c; sourceTree = "<group>"; };
 		0CAFC8892432FDC30039289A /* string.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = string.h; sourceTree = "<group>"; };
+		0CD6DDA92437AD2000C6FCC6 /* h264toPng.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = h264toPng.h; sourceTree = "<group>"; };
+		0CD6DDAA2437ADAD00C6FCC6 /* h264toPng.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = h264toPng.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -41,7 +54,12 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0CD6DDA7243426D500C6FCC6 /* libavutil.a in Frameworks */,
+				0CD6DDA6243426D500C6FCC6 /* libswresample.a in Frameworks */,
+				0CD6DDA5243426D500C6FCC6 /* libswscale.a in Frameworks */,
+				0CD6DDA8243426D500C6FCC6 /* libavformat.a in Frameworks */,
 				0C05BD3F243262B2006CE112 /* libpcap.tbd in Frameworks */,
+				0CD6DDA4243426B100C6FCC6 /* libavcodec.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -75,6 +93,8 @@
 				0CAFC8872432FB7A0039289A /* receiver.c */,
 				0CAFC8892432FDC30039289A /* string.h */,
 				0C95BAC624336A9F0096B4B6 /* define.h */,
+				0CD6DDA92437AD2000C6FCC6 /* h264toPng.h */,
+				0CD6DDAA2437ADAD00C6FCC6 /* h264toPng.c */,
 			);
 			path = ImagePicker;
 			sourceTree = "<group>";
@@ -82,6 +102,11 @@
 		0C05BD3D243262B1006CE112 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				0C7465DB243425F8002E2B0D /* libavcodec.a */,
+				0C7465DA243425F8002E2B0D /* libavformat.a */,
+				0C7465DE243425F8002E2B0D /* libavutil.a */,
+				0C7465DC243425F8002E2B0D /* libswresample.a */,
+				0C7465DD243425F8002E2B0D /* libswscale.a */,
 				0C05BD3E243262B2006CE112 /* libpcap.tbd */,
 			);
 			name = Frameworks;
@@ -146,6 +171,7 @@
 			files = (
 				0CAFC8882432FB7A0039289A /* receiver.c in Sources */,
 				0C05BD37243228C7006CE112 /* main.c in Sources */,
+				0CD6DDAB2437ADAD00C6FCC6 /* h264toPng.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -265,7 +291,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				FRAMEWORK_SEARCH_PATHS = "";
 				GCC_C_LANGUAGE_STANDARD = c99;
+				HEADER_SEARCH_PATHS = /usr/local/Cellar/ffmpeg/4.2.2_2/include/;
+				LIBRARY_SEARCH_PATHS = /usr/local/Cellar/ffmpeg/4.2.2_2/lib;
+				OTHER_LDFLAGS = "-fno-stack-check";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -274,7 +304,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				FRAMEWORK_SEARCH_PATHS = "";
 				GCC_C_LANGUAGE_STANDARD = c99;
+				HEADER_SEARCH_PATHS = /usr/local/Cellar/ffmpeg/4.2.2_2/include/;
+				LIBRARY_SEARCH_PATHS = /usr/local/Cellar/ffmpeg/4.2.2_2/lib;
+				OTHER_LDFLAGS = "-fno-stack-check";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;

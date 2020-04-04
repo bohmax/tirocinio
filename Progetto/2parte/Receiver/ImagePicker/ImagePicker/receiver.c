@@ -68,10 +68,10 @@ void sniff(u_char *useless,const struct pcap_pkthdr* pkthdr,const u_char*
                 printf("start new gop %d\n", num_pkt);
                 if (payload.size != 0){
                     FILE* f = NULL;
-                    if ((f = fopen("/Users/maxuel/Desktop/hope", "wb"))){
+                    if ((f = fopen(path_file, "w"))){
                         fwrite(payload.value, 1, payload.size, f);
                         fclose(f);
-                    }
+                    } else printf("Error: %s\n", strerror(errno));
                     num_gop += 1;
                     payload.size = 0;
                     if (num_gop == 2){

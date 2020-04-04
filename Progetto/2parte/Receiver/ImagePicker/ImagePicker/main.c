@@ -9,6 +9,7 @@
 #include "utility.h"
 
 char* path_file = NULL; /* definita in utility.h */
+char* path_image = NULL;
 
 //thread per la gestione dei segnali per far terminare il programma
 void* segnali(void *arg);
@@ -90,9 +91,10 @@ int main(int argc, const char * argv[]) {
     pcap_if_t *device = NULL;
     struct bpf_program fp;        /* to hold compiled program */
     pthread_t listener, segnal; //thread listener e segnali
-    if (argc != 3) exit(EXIT_FAILURE);
+    if (argc != 4) exit(EXIT_FAILURE);
     dev_name = (char*) argv[1];
     path_file = (char*) argv[2];
+    path_image = (char*) argv[3];
     if(pcap_findalldevs(&alldevs, errbuf)==-1) exit(EXIT_FAILURE);
     set_signal();
     //avvio thread che gestisce i segnali
@@ -113,5 +115,9 @@ int main(int argc, const char * argv[]) {
     pcap_freecode(&fp);
     pcap_close(handle);
     pcap_freealldevs(alldevs);
+    clock_t begin = clock();
+    create_image();
+    clock_t end = clock();
+    printf("Tempo di esezione %f\n", (double)(end - begin) / CLOCKS_PER_SEC);
     return 0;
 }

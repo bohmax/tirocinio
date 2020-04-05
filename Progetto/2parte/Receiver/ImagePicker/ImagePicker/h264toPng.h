@@ -11,6 +11,9 @@
 
 #include "utility.h"
 
+//permette la lettura da un buffer
+int read_packet(void *opaque, uint8_t *buf, int buf_size);
+
 void logging(const char *fmt, ...);
 
 //salva un png in un file
@@ -18,20 +21,22 @@ void savePNG(AVPacket* packet, int FrameNo);
 
 //MIA
 //Converta in png
-int decode_to_png(AVCodecContext *pCodecCtx, AVFrame *pFrame, int FrameNo);
+int decode_to_png(AVFrame *pFrame, int FrameNo);
 
 //funzione simile a una trovata in rete
 //codifica i pixel in rgb24
-int decode_to_rgb24(AVCodecContext *pCodecCtx, AVFrame *pFrame, int FrameNo);
+int decode_to_rgb24(AVFrame *pFrame, int FrameNo);
 
 //sempre dal link sotto in parte
 //prende ogni singolo frame o le prepara alla codifica in png
-int decode_packet(AVPacket *pPacket, AVCodecContext *pCodecContext, AVFrame *pFrame);
+int decode_packet(AVPacket *pPacket, AVCodecContext *pCodecContext);
 
 //https://github.com/leandromoreira/ffmpeg-libav-tutorial/blob/master/0_hello_world.c
 //decodifica un file h264 e crea AVPacket che contengono un frame
 int create_image(void);
 
+//thread che gestisce la decodifica dell'immagine
+void* decoder(void* arg);
 #endif /* h264toPng_h */
 /*
  static void SaveFrame(AVFrame *pFrame, int width, int height, int iFrame)

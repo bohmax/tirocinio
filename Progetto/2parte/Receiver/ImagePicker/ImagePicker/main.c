@@ -10,6 +10,12 @@
 
 char* path_file = NULL; /* definita in utility.h */
 char* path_image = NULL;
+list* testa = NULL;
+list* coda = NULL; 
+pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+gop gop_info = { 0 };
+int esci = 0;
 
 //thread per la gestione dei segnali per far terminare il programma
 void* segnali(void *arg);
@@ -29,6 +35,7 @@ void* segnali(void *arg){
     printf("In uscita..\n");
     //per qualsiasi segnare registrato termina pcap_loop
     pcap_breakloop(handle);
+    esci = 1;
     return (void*) 0;
 }
 

@@ -12,7 +12,6 @@ string metadata; //dovrà contenere SPS e PPS
 string payload; //dovrà contenere un intero GOP
 int inizialized = 0; //ci dice se è stato trovato SPS e PPS
 int num_pkt = 0; //numero dei pacchetti arrivati
-int num_frame = 0; //numero di frame analizzati
 int num_gop = 0; //numero di GOP trovati
 
 void starter(string* stringa){
@@ -73,9 +72,13 @@ void sniff(u_char *useless,const struct pcap_pkthdr* pkthdr,const u_char*
                         fclose(f);
                     } else printf("Error: %s\n", strerror(errno));
                     num_gop += 1;
-                    payload.size = 0;
                     if (num_gop == 2){
                         pcap_breakloop(handle);
+                        return;
+                    }
+                    else{
+                        gop_info.num_frame = 0;
+                        payload.size = 0;
                     }
                 }
             }
@@ -87,7 +90,7 @@ void sniff(u_char *useless,const struct pcap_pkthdr* pkthdr,const u_char*
             payload.size += 1;
         }
         else if (end_bit == 64)
-            num_frame += 1;  // solo per dati statistici
+            gop_info.num_frame++;  // solo per dati statistici
         
         add(&payload, rtpdata+2, rtpdata_len-2);  // rimuove gli header del payload e contiene solo i dati successivi
     }

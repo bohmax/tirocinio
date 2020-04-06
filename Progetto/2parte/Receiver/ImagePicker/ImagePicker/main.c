@@ -10,11 +10,15 @@
 
 char* path_file = NULL; /* definita in utility.h */
 char* path_image = NULL;
-list* testa = NULL;
-list* coda = NULL; 
-pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
-gop gop_info = { 0 };
+list* testa_gop = NULL;
+list* coda_gop = NULL;
+list* testa_dec = NULL;
+list* coda_dec = NULL;
+pthread_mutex_t mtx_gop = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t cond_gop = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t mtx_dec = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t cond_dec = PTHREAD_COND_INITIALIZER;
+//gop gop_info = { 0 };
 int esci = 0;
 
 //thread per la gestione dei segnali per far terminare il programma
@@ -83,9 +87,74 @@ void set_signal(){
     ERRORSYSHEANDLER(notused,pthread_sigmask(SIG_SETMASK, &sigset_usr, NULL),-1,"NO SIGMAS")
 }
 
+void* DecoderThread(void* arg){
+    printf("Thread per la decodifica di un GOP creato\n");
+    int esci = 0;
+    gop_info* el = NULL;
+    while (!esci) {
+        pthread_mutex_lock(&mtx_dec);
+        while (testa_dec == NULL)
+            pthread_cond_wait(&cond_dec, &mtx_dec);
+        el = popList(&testa_dec, &coda_dec);
+        pthread_mutex_unlock(&mtx_dec);
+        if (el->gop_num >= 0) {
+            create_image(el);
+            freeGOP(&el);
+        } else esci = 1;
+    }
+    printf("Thread decodifica Thread\n");
+    return (void*) 0;
+}
+
+void* GOPThread(void* arg){
+    printf("Thread che crea GOP creato\n");
+    int chiudi = 0, count = 0, gop_count = 0, ret;
+    pthread_t decodehandler;
+    SYSFREE(ret,pthread_create(&decodehandler,NULL,&DecoderThread,NULL),0,"thread")
+    gop_info* info = setElGOP(gop_count);
+    rtp* el = NULL;
+    while (!chiudi) {
+        pthread_mutex_lock(&mtx_gop);
+        while (testa_gop == NULL)
+            pthread_cond_wait(&cond_gop, &mtx_gop);
+        el = popList(&testa_gop, &coda_gop);
+        pthread_mutex_unlock(&mtx_gop);
+        if (el->packet) {
+            if(workOnPacket(el->packet, el->size, el->n_pkt, info)){ //attualmente è copiato attravarso una alloc, potrei togliere la memcpy
+                pthread_mutex_lock(&mtx_dec);
+                pushList(&testa_dec, &coda_dec, info);
+                pthread_cond_signal(&cond_dec);
+                pthread_mutex_unlock(&mtx_dec);
+                gop_count++;
+                info = setElGOP(gop_count);
+            }
+        } else
+            chiudi = 1;
+        freeRTP(&el);
+        count++;
+    }
+    pthread_mutex_lock(&mtx_dec);
+    pushList(&testa_dec, &coda_dec, setElGOP(-1));
+    pthread_cond_signal(&cond_dec);
+    pthread_mutex_unlock(&mtx_dec);
+    SYSFREE(ret,pthread_join(decodehandler,NULL),0,"decode 1")
+    printf("Thread che crea GOP esce\n");
+    return (void*) 0;
+}
+
 void* listenerThread(void* arg){
+    //creazione thread che gestisce
+    int ret;
+    pthread_t gophandler;
+    SYSFREE(ret,pthread_create(&gophandler,NULL,&GOPThread,NULL),0,"thread")
     pcap_loop(handle, -1, sniff, NULL);
     printf("Thread in uscita\n");
+    /* invia chiusura gop thread */
+    pthread_mutex_lock(&mtx_gop);
+    pushList(&testa_gop, &coda_gop, setElRTP(NULL, -1, -1));
+    pthread_cond_signal(&cond_gop);
+    pthread_mutex_unlock(&mtx_gop);
+    SYSFREE(ret,pthread_join(gophandler,NULL),0,"gop 1")
     return (void*)0;
 }
 
@@ -122,9 +191,9 @@ int main(int argc, const char * argv[]) {
     pcap_freecode(&fp);
     pcap_close(handle);
     pcap_freealldevs(alldevs);
-    clock_t begin = clock();
-    create_image();
-    clock_t end = clock();
-    printf("Tempo di esecuzione %f\n", (double)(end - begin) / CLOCKS_PER_SEC);
+    //clock_t begin = clock();
+    //create_image();
+    //clock_t end = clock();
+    //printf("Tempo di esecuzione %f\n", (double)(end - begin) / CLOCKS_PER_SEC);
     return 0;
 }

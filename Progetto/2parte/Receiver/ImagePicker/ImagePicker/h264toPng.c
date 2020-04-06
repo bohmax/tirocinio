@@ -25,10 +25,11 @@ void inizialize_context(AVCodecContext* codec){
     
     pngContext->pix_fmt = AV_PIX_FMT_RGB24;
     pngContext->time_base = (AVRational) { .num = 25, .den = 1};
-    pngContext->framerate = (AVRational) { .num = 25, .den = 1};
+    pngContext->framerate = (AVRational) { .num = 0, .den = 0};
     pngContext->height = codec->height;
     pngContext->width = codec->width;
-    pngContext->thread_count = 1;
+    //pngContext->thread_count = 0;
+    //pngContext->thread_type = FF_THREAD_FRAME;
     if ((result = avcodec_open2(pngContext, pngCodec, NULL)) < 0) {
         printf("%s\n", av_err2str(result));
         exit(-1);
@@ -54,16 +55,17 @@ void logging(const char *fmt, ...){
     fprintf( stderr, "\n" );
 }
 
-void savePNG(AVPacket* packet, int FrameNo){
+void savePNG(AVPacket* packet, int FrameNo, int gop_num){
     FILE *PNGFile;
     char PNGName[128];
-    sprintf(PNGName, "%sframe-%06d.png", path_image, FrameNo);
-    PNGFile = fopen(PNGName, "wb");
-    fwrite(packet->data, 1, packet->size, PNGFile);
-    fclose(PNGFile);
+    sprintf(PNGName, "%s-%06d-%06d.png", path_image, gop_num, FrameNo);
+    if((PNGFile = fopen(PNGName, "wb"))){
+        fwrite(packet->data, 1, packet->size, PNGFile);
+        fclose(PNGFile);
+    } else printf("Error: %s\n", strerror(errno));
 }
 
-int decode_to_png(AVFrame *pFrame, int FrameNo) {
+int decode_to_png(AVFrame *pFrame, int FrameNo, int gop_num) {
     int response = avcodec_send_frame(pngContext, pFrame);
     if (response < 0) {
         logging("Error while sending a packet to the decoder: %s", av_err2str(response));
@@ -84,14 +86,14 @@ int decode_to_png(AVFrame *pFrame, int FrameNo) {
             exit(1);
         }
         
-        savePNG(packet, FrameNo);
+        savePNG(packet, FrameNo, gop_num);
         av_packet_unref(packet);
     }
     av_packet_free(&packet);
     return 0;
 }
 
-int pixel_to_rgb24(AVFrame *pFrame, int FrameNo) {
+int pixel_to_rgb24(AVFrame *pFrame, int FrameNo, int gop_num) {
     //pFrame=avcodec_alloc_frame();
     // Allocate an AVFrame structure
     AVFrame* pFrameRGB=av_frame_alloc();
@@ -115,14 +117,14 @@ int pixel_to_rgb24(AVFrame *pFrame, int FrameNo) {
     pFrameRGB->height = pFrame->height;
     pFrameRGB->width = pFrame->width;
     pFrameRGB->pts = FrameNo;
-    decode_to_png(pFrameRGB, FrameNo);
+    decode_to_png(pFrameRGB, FrameNo, gop_num);
     av_frame_free(&pFrameRGB);
     free(buffer);
     //SaveFrame(pFrameRGB, pCodecCtx->width, pCodecCtx->height, FrameNo);
     return 0;
 }
 
-int decode_packet(AVPacket *pPacket, AVCodecContext *pCodecContext){
+int decode_packet(AVPacket *pPacket, AVCodecContext *pCodecContext, int gop_num){
     // https://ffmpeg.org/doxygen/trunk/structAVFrame.html
     AVFrame *pFrame = av_frame_alloc();
     if (!pFrame){
@@ -150,7 +152,7 @@ int decode_packet(AVPacket *pPacket, AVCodecContext *pCodecContext){
                 pFrame->key_frame,
                 pFrame->coded_picture_number);
         //decode_to_png(pCodecContext, pFrame, pCodecContext->frame_number);
-        pixel_to_rgb24(pFrame, pCodecContext->frame_number);
+        pixel_to_rgb24(pFrame, pCodecContext->frame_number, gop_num);
         //pthread_mutex_lock(&mtx);
         //pushList(&testa, &coda, pFrame, pCodecContext->frame_number);
         //pthread_cond_signal(&cond);
@@ -161,7 +163,7 @@ int decode_packet(AVPacket *pPacket, AVCodecContext *pCodecContext){
     return 0;
 }
 
-int create_image(){
+int create_image(gop_info* info){
     int result; //variabile per gli errori
     //pthread_t decode[NUMDECODERTHR];
     //printf("creando i thread\n");
@@ -169,8 +171,10 @@ int create_image(){
     //    SYSFREE(result,pthread_create(&decode[i],NULL,&decoder,NULL),0,"thread")
     //printf("thread creati...\n");
     AVFormatContext *c = NULL;
-    
-    result = avformat_open_input(&c, path_file, NULL, NULL);
+    char GOPName[64];
+    sprintf(GOPName, "%s-%06d", path_file, info->gop_num);
+    logging("decodificando il file %s", GOPName);
+    result = avformat_open_input(&c, GOPName, NULL, NULL);
     if ( result != 0){
         logging("Cannot open file");
         printf("%s\n", av_err2str(result));
@@ -273,10 +277,8 @@ int create_image(){
     // fill the Packet with data from the Stream
     // https://ffmpeg.org/doxygen/trunk/group__lavf__decoding.html#ga4fdb3084415a82e3810de6ee60e46a61
     while ((ret = av_read_frame(c, pPacket)) >= 0) {
-        
-        if (pPacket->stream_index == video_stream_index){
-            decode_packet(pPacket, pCodecContext);
-        }
+        if (pPacket->stream_index == video_stream_index)
+            decode_packet(pPacket, pCodecContext, info->gop_num);
         // https://ffmpeg.org/doxygen/trunk/group__lavc__packet.html#ga63d5a489b419bd5d45cfd09091cbcbc2
         av_packet_unref(pPacket);
         
@@ -303,18 +305,19 @@ int create_image(){
     return 0;
 }
 
+/* thread per il multi thread
 void* decoder(void* arg){
     printf("Thread\n");
     AVFrame* frame = NULL;
     int nFrame = 0;
-    list* el = NULL;
+    list_dec* el = NULL;
     int fine = 0;
     while (!fine) {
         pthread_mutex_lock(&mtx);
         while (testa == NULL) {
             pthread_cond_wait(&cond, &mtx);
         }
-        el = popList(&testa, &coda);
+        el = popListDec(&testa, &coda);
         pthread_mutex_unlock(&mtx);
         if (el->frame) {
             frame = el->frame;
@@ -322,6 +325,6 @@ void* decoder(void* arg){
             pixel_to_rgb24(frame, nFrame);
         } else fine = 1;
     }
-    freeList(&el);
+    freeListDec(&el);
     return (void*)0;
-}
+}*/

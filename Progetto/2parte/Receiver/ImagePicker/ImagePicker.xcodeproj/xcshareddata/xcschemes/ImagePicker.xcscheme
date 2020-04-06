@@ -56,7 +56,7 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = " /Users/maxuel/Desktop/cnr2.pcap /Users/maxuel/Desktop/hope /Users/maxuel/Desktop/"
+            argument = " /Users/maxuel/Desktop/cnr2.pcap /Users/maxuel/Desktop/gopfolder/gop /Users/maxuel/Desktop/imgfolder/frame"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>

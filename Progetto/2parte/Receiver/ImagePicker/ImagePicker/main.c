@@ -47,6 +47,16 @@ void* segnali(void *arg){
     pushList(&testa_gop, &coda_gop, setElRTP(NULL, -1, -1));
     pthread_cond_signal(&cond_gop);
     pthread_mutex_unlock(&mtx_gop);
+    //svuota la lista di decodifica
+    pthread_mutex_lock(&mtx_dec);
+    freeList(&testa_dec, &coda_dec, &freeGOP);
+    pthread_mutex_unlock(&mtx_dec);
+    for (int i = 0; i < NUMDECODERTHR; i++) {
+        pthread_mutex_lock(&mtx_dec);
+        pushList(&testa_dec, &coda_dec, setElGOP(-1));
+        pthread_cond_signal(&cond_dec);
+        pthread_mutex_unlock(&mtx_dec);
+    }
     esci = 1;
     return (void*) 0;
 }
@@ -143,10 +153,6 @@ void* GOPThread(void* arg){
         count++;
     }
     freeGOP((void**)(&info));
-    //svuota la lista di decodifica
-    pthread_mutex_lock(&mtx_dec);
-    freeList(&testa_dec, &coda_dec, &freeGOP);
-    pthread_mutex_unlock(&mtx_dec);
     for (int i = 0; i < NUMDECODERTHR; i++) {
         pthread_mutex_lock(&mtx_dec);
         pushList(&testa_dec, &coda_dec, setElGOP(-1));
@@ -164,12 +170,14 @@ void* listenerThread(void* arg){
     //creazione thread che gestisce
     int ret;
     pthread_t gophandler;
+    rtp* end = setElRTP(NULL, -1,-1);
     SYSFREE(ret,pthread_create(&gophandler,NULL,&GOPThread,NULL),0,"thread")
     pcap_loop(handle, -1, sniff, NULL);
-    if (!esci) {
-        pthread_kill(segnal, SIGINT); //manda un segnale al thread
-    }
     printf("Thread in uscita\n");
+    pthread_mutex_lock(&mtx_gop);
+    pushList(&testa_gop, &coda_gop, end);
+    pthread_cond_signal(&cond_gop);
+    pthread_mutex_unlock(&mtx_gop);
     SYSFREE(ret,pthread_join(gophandler,NULL),0,"gop 1")
     return (void*)0;
 }
@@ -198,15 +206,18 @@ int main(int argc, const char * argv[]) {
     printf("Sniffing on device: %s\n", dev_name);
     // For every packet received, call the callback function
     // ctrl-c to stop sniffing
+    //
     SYSFREE(notused,pthread_create(&listener,NULL,&listenerThread,NULL),0,"thread")
     printf("Aspetta i thread\n");
     SYSFREE(notused,pthread_join(listener,NULL),0,"listener 1")
+    pthread_kill(segnal, SIGINT); //manda un segnale al thread
     SYSFREE(notused,pthread_join(segnal,NULL),0,"join 1")
     printf("Uscita dal programma\n");
     pcap_freecode(&fp);
     pcap_close(handle);
     pcap_freealldevs(alldevs);
-    
+    freeList(&testa_gop, &coda_gop, &freeRTP);
+    freeList(&testa_dec, &coda_dec, &freeGOP);
     //create_image();
     clock_t end = clock();
     printf("Tempo di esecuzione %f\n", (double)(end - begin) / CLOCKS_PER_SEC);

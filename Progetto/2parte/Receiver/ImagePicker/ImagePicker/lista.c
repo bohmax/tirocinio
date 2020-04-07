@@ -16,8 +16,9 @@ gop_info* setElGOP(int gop_num){
     return new;
 }
 
-void freeGOP(gop_info** el){
-    free(*el);
+void freeGOP(void** el){
+    gop_info* info = (gop_info*) (*el);
+    free(info);
     *el = NULL;
 }
 
@@ -28,6 +29,13 @@ rtp* setElRTP(u_char* buf, int size, int npkt){
     new->size = size;
     new->n_pkt = npkt;
     return new;
+}
+
+void freeList(list** head, list** coda, void(* del)(void** el)){
+    while (*head) {
+        void* el = popList(head, coda);
+        del(&el);
+    }
 }
 
 void pushList(list** head, list** coda, void* el){
@@ -54,8 +62,9 @@ void* popList(list** head, list** coda){
     return el;
 }
 
-void freeRTP(rtp** el){
-    free((*el)->packet);
+void freeRTP(void** el){
+    rtp* todestroy = (rtp*) (*el);
+    free(todestroy->packet);
     free(*el);
     *el = NULL;
 }

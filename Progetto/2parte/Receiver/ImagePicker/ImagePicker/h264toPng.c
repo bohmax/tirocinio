@@ -8,43 +8,8 @@
 
 #include "h264toPng.h"
 
-AVCodecContext *pngContext = NULL;
-struct SwsContext* img_convert_ctx = NULL;
-
-void inizialize_context(AVCodecContext* codec){
-    int result = 0;
-    // codec per png
-    AVCodec *pngCodec = avcodec_find_encoder(AV_CODEC_ID_PNG);
-    if (!pngCodec) {
-        exit(-1);
-    }
-    pngContext = avcodec_alloc_context3(pngCodec);
-    if (!pngContext) {
-        exit(-1);
-    }
-    
-    pngContext->pix_fmt = AV_PIX_FMT_RGB24;
-    pngContext->time_base = (AVRational) { .num = 25, .den = 1};
-    pngContext->framerate = (AVRational) { .num = 0, .den = 0};
-    pngContext->height = codec->height;
-    pngContext->width = codec->width;
-    //pngContext->thread_count = 0;
-    //pngContext->thread_type = FF_THREAD_FRAME;
-    if ((result = avcodec_open2(pngContext, pngCodec, NULL)) < 0) {
-        printf("%s\n", av_err2str(result));
-        exit(-1);
-    }
-    img_convert_ctx = sws_getContext(codec->width, codec->height, codec->pix_fmt, codec->width, codec->height, AV_PIX_FMT_RGB24, SWS_BICUBIC, NULL, NULL, NULL);
-    if(!img_convert_ctx) {
-        fprintf(stderr, "Cannot initialize the conversion context!\n");
-        exit(1);
-    }
-}
-
-void free_context(){
-    avcodec_free_context(&pngContext);
-    sws_freeContext(img_convert_ctx);
-}
+//AVCodecContext *pngContext = NULL;
+//struct SwsContext* img_convert_ctx = NULL;
 
 void logging(const char *fmt, ...){
     va_list args;
@@ -66,6 +31,29 @@ void savePNG(AVPacket* packet, int FrameNo, int gop_num){
 }
 
 int decode_to_png(AVFrame *pFrame, int FrameNo, int gop_num) {
+    int result = 0;
+    // codec per png
+    AVCodecContext *pngContext = NULL;
+    AVCodec *pngCodec = avcodec_find_encoder(AV_CODEC_ID_PNG);
+    if (!pngCodec) {
+        exit(-1);
+    }
+    pngContext = avcodec_alloc_context3(pngCodec);
+    if (!pngContext) {
+        exit(-1);
+    }
+    
+    pngContext->pix_fmt = AV_PIX_FMT_RGB24;
+    pngContext->time_base = (AVRational) { .num = 25, .den = 1};
+    pngContext->framerate = (AVRational) { .num = 0, .den = 0};
+    pngContext->height = pFrame->height;
+    pngContext->width = pFrame->width;
+    //pngContext->thread_count = 0;
+    //pngContext->thread_type = FF_THREAD_FRAME;
+    if ((result = avcodec_open2(pngContext, pngCodec, NULL)) < 0) {
+        printf("%s\n", av_err2str(result));
+        exit(-1);
+    }
     int response = avcodec_send_frame(pngContext, pFrame);
     if (response < 0) {
         logging("Error while sending a packet to the decoder: %s", av_err2str(response));
@@ -86,16 +74,22 @@ int decode_to_png(AVFrame *pFrame, int FrameNo, int gop_num) {
             exit(1);
         }
         
-        savePNG(packet, FrameNo, gop_num);
+        //savePNG(packet, FrameNo, gop_num);
         av_packet_unref(packet);
     }
     av_packet_free(&packet);
+    avcodec_free_context(&pngContext);
     return 0;
 }
 
-int pixel_to_rgb24(AVFrame *pFrame, int FrameNo, int gop_num) {
+int pixel_to_rgb24(AVFrame *pFrame,int pix_fmt ,int FrameNo, int gop_num) {
     //pFrame=avcodec_alloc_frame();
     // Allocate an AVFrame structure
+    struct SwsContext* img_convert_ctx = sws_getContext(pFrame->width, pFrame->height, pix_fmt, pFrame->width, pFrame->height, AV_PIX_FMT_RGB24, SWS_BICUBIC, NULL, NULL, NULL);
+    if(!img_convert_ctx) {
+        fprintf(stderr, "Cannot initialize the conversion context!\n");
+        exit(1);
+    }
     AVFrame* pFrameRGB=av_frame_alloc();
     if(pFrameRGB==NULL)
         return -1;
@@ -120,6 +114,7 @@ int pixel_to_rgb24(AVFrame *pFrame, int FrameNo, int gop_num) {
     decode_to_png(pFrameRGB, FrameNo, gop_num);
     av_frame_free(&pFrameRGB);
     free(buffer);
+    sws_freeContext(img_convert_ctx);
     //SaveFrame(pFrameRGB, pCodecCtx->width, pCodecCtx->height, FrameNo);
     return 0;
 }
@@ -152,7 +147,7 @@ int decode_packet(AVPacket *pPacket, AVCodecContext *pCodecContext, int gop_num)
                 pFrame->key_frame,
                 pFrame->coded_picture_number);
         //decode_to_png(pCodecContext, pFrame, pCodecContext->frame_number);
-        pixel_to_rgb24(pFrame, pCodecContext->frame_number, gop_num);
+        pixel_to_rgb24(pFrame, pCodecContext->pix_fmt, pCodecContext->frame_number, gop_num);
         //pthread_mutex_lock(&mtx);
         //pushList(&testa, &coda, pFrame, pCodecContext->frame_number);
         //pthread_cond_signal(&cond);
@@ -272,7 +267,6 @@ int create_image(gop_info* info){
         return -1;
     }
 
-    inizialize_context(pCodecContext);
     int ret = 0;
     // fill the Packet with data from the Stream
     // https://ffmpeg.org/doxygen/trunk/group__lavf__decoding.html#ga4fdb3084415a82e3810de6ee60e46a61
@@ -301,7 +295,6 @@ int create_image(gop_info* info){
     av_packet_free(&pPacket);
     //free(pPacket);
     avcodec_free_context(&pCodecContext);
-    free_context();
     return 0;
 }
 

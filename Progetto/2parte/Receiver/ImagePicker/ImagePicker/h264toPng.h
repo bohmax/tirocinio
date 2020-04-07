@@ -22,7 +22,7 @@ int decode_to_png(AVFrame *pFrame, int FrameNo, int gop_num);
 
 //funzione simile a una trovata in rete
 //codifica i pixel in rgb24
-int decode_to_rgb24(AVFrame *pFrame, int FrameNo, int gop_num);
+int decode_to_rgb24(AVFrame *pFrame, int pix_fmt, int FrameNo, int gop_num);
 
 //sempre dal link sotto in parte
 //prende ogni singolo frame o le prepara alla codifica in png

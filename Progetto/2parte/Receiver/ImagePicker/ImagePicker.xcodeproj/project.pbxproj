@@ -17,6 +17,9 @@
 		0CD6DDA7243426D500C6FCC6 /* libavutil.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0C7465DE243425F8002E2B0D /* libavutil.a */; };
 		0CD6DDA8243426D500C6FCC6 /* libavformat.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0C7465DA243425F8002E2B0D /* libavformat.a */; };
 		0CD6DDAB2437ADAD00C6FCC6 /* h264toPng.c in Sources */ = {isa = PBXBuildFile; fileRef = 0CD6DDAA2437ADAD00C6FCC6 /* h264toPng.c */; };
+		0CF68DA8243DFB2300DF95C5 /* icl_hash.c in Sources */ = {isa = PBXBuildFile; fileRef = 0CF68DA7243DFB2300DF95C5 /* icl_hash.c */; };
+		0CF68DAA243E49E400DF95C5 /* struct_fun.c in Sources */ = {isa = PBXBuildFile; fileRef = 0CF68DA9243E49E400DF95C5 /* struct_fun.c */; };
+		0CF68DAD243E521B00DF95C5 /* threads.c in Sources */ = {isa = PBXBuildFile; fileRef = 0CF68DAC243E521B00DF95C5 /* threads.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -50,6 +53,12 @@
 		0CAFC8892432FDC30039289A /* struct.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = struct.h; sourceTree = "<group>"; };
 		0CD6DDA92437AD2000C6FCC6 /* h264toPng.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = h264toPng.h; sourceTree = "<group>"; };
 		0CD6DDAA2437ADAD00C6FCC6 /* h264toPng.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = h264toPng.c; sourceTree = "<group>"; };
+		0CF68DA6243DFB2300DF95C5 /* icl_hash.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = icl_hash.h; sourceTree = "<group>"; };
+		0CF68DA7243DFB2300DF95C5 /* icl_hash.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = icl_hash.c; sourceTree = "<group>"; };
+		0CF68DA9243E49E400DF95C5 /* struct_fun.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = struct_fun.c; sourceTree = "<group>"; };
+		0CF68DAB243E521B00DF95C5 /* threads.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = threads.h; sourceTree = "<group>"; };
+		0CF68DAC243E521B00DF95C5 /* threads.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = threads.c; sourceTree = "<group>"; };
+		0CF68DAE243E5A5B00DF95C5 /* struct_fun.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = struct_fun.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -90,16 +99,22 @@
 			isa = PBXGroup;
 			children = (
 				0C05BD36243228C7006CE112 /* main.c */,
-				0C05BD402432A1A9006CE112 /* rtp.h */,
-				0CAFC8852432FAD20039289A /* receiver.h */,
 				0CAFC8862432FAEF0039289A /* utility.h */,
-				0CAFC8872432FB7A0039289A /* receiver.c */,
-				0CAFC8892432FDC30039289A /* struct.h */,
 				0C95BAC624336A9F0096B4B6 /* define.h */,
+				0C05BD402432A1A9006CE112 /* rtp.h */,
+				0CAFC8892432FDC30039289A /* struct.h */,
+				0CF68DAE243E5A5B00DF95C5 /* struct_fun.h */,
+				0CF68DA9243E49E400DF95C5 /* struct_fun.c */,
+				0CAFC8852432FAD20039289A /* receiver.h */,
+				0CAFC8872432FB7A0039289A /* receiver.c */,
 				0CD6DDA92437AD2000C6FCC6 /* h264toPng.h */,
 				0CD6DDAA2437ADAD00C6FCC6 /* h264toPng.c */,
 				0C3540D224392EE300F28A77 /* lista.h */,
 				0C3540D324392EE300F28A77 /* lista.c */,
+				0CF68DA6243DFB2300DF95C5 /* icl_hash.h */,
+				0CF68DA7243DFB2300DF95C5 /* icl_hash.c */,
+				0CF68DAB243E521B00DF95C5 /* threads.h */,
+				0CF68DAC243E521B00DF95C5 /* threads.c */,
 			);
 			path = ImagePicker;
 			sourceTree = "<group>";
@@ -174,10 +189,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0CAFC8882432FB7A0039289A /* receiver.c in Sources */,
-				0C3540D424392EE300F28A77 /* lista.c in Sources */,
 				0C05BD37243228C7006CE112 /* main.c in Sources */,
+				0CF68DAA243E49E400DF95C5 /* struct_fun.c in Sources */,
+				0C3540D424392EE300F28A77 /* lista.c in Sources */,
+				0CF68DAD243E521B00DF95C5 /* threads.c in Sources */,
+				0CAFC8882432FB7A0039289A /* receiver.c in Sources */,
 				0CD6DDAB2437ADAD00C6FCC6 /* h264toPng.c in Sources */,
+				0CF68DA8243DFB2300DF95C5 /* icl_hash.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -26,9 +26,6 @@ int addPacketToGOP(u_char* rtpdata, int rtpdata_len, int num_pkt, gop_info* info
 
 //stub per chiamare addPacket e e create_header in autonomia
 //ritorna uno se il gop è terminato 0 altrimenti
-int workOnPacket(const u_char* packet, int packet_size, int num_pkt, gop_info* info);
+int workOnPacket(rtp* el, gop_info* info);
 
-//callback del thread che sniffa i pacchetti
-void sniff(u_char *useless,const struct pcap_pkthdr* pkthdr,const u_char*
-              packet);
 #endif /* receiver_h */

@@ -8,8 +8,6 @@
 
 #include "receiver.h"
 
-string metadata; //dovrà contenere SPS e PPS
-string payload; //dovrà contenere un intero GOP
 int inizialized = 0; //ci dice se è stato trovato SPS e PPS
 int num_pkt = 0; //numero dei pacchetti arrivati
 int num_gop = 0; //numero di GOP trovati
@@ -86,13 +84,29 @@ int addPacketToGOP(u_char* rtpdata, int rtpdata_len, int num_pkt, gop_info* info
     return return_value;
 }
 
-int workOnPacket(const u_char* packet, int packet_size, int num_pkt, gop_info* info){
-    int to_rtphdr = (sizeof(struct ether_header) + sizeof(struct ip) + sizeof(struct udphdr));
+void* insert_hash(int primarykey, void* insert){
+    int* key = setkeyHash(primarykey);
+    int buck = hash_pjw(key) % hash_packet->nbuckets;
+    int mtxi = buck / DIV;
+    pthread_mutex_lock(&mtxhash[mtxi]);
+    void* ris = icl_hash_insert(hash_packet, key, insert);
+    pthread_mutex_unlock(&mtxhash[mtxi]);
+    return ris;
+}
+
+int workOnPacket(rtp* el, gop_info* info){
+    
+    int to_rtphdr = sizeof(struct udphdr);
     int to_rtpdata = to_rtphdr + sizeof(rtphdr);
-    int rtpdata_len = packet_size - to_rtpdata;
-    //rtphdr* rtpHeader = (rtphdr*)(packet + to_rtphdr);
+    int rtpdata_len = el->size - to_rtpdata;
+    rtphdr* rtpHeader = (rtphdr*)(el->packet + to_rtphdr);
+    int seq = ntohs(rtpHeader->seq_num);
+    if(!insert_hash(seq, el)){ //elemento già inserito ritorna
+        freeRTP((void**)&el);
+        return 0;
+    }
     //printf("RTP number [%d], timestamp of this packet is: %d\n", ntohs(rtpHeader->seq_num), ntohl(rtpHeader->TS)); //function converts the unsigned short integer netshort from network byte order to host byte order.
-    u_char* rtpdata =(u_char*) (packet + to_rtpdata);
+    u_char* rtpdata =(u_char*) (el->packet + to_rtpdata);
     //FU - A - -HEADER
     unsigned int forbidden = rtpdata[0] & 0x80 >> 7;
     unsigned int nri = rtpdata[0] & 0x60 >> 5;
@@ -104,19 +118,4 @@ int workOnPacket(const u_char* packet, int packet_size, int num_pkt, gop_info* i
     else if (fragment_type == 28) //dati per il GOP
         return addPacketToGOP(rtpdata, rtpdata_len, num_pkt, info);
     return 0;
-}
-
-void sniff(u_char *useless, const struct pcap_pkthdr* pkthdr, const u_char*
-              packet){
-    num_pkt += 1;
-    
-    //setto gli elementi per poter passare i dati a un altro thread
-    u_char* buf = malloc(sizeof(u_char)*pkthdr->len);
-    memcpy(buf, packet, pkthdr->len);
-    rtp* el= setElRTP(buf, pkthdr->len, num_pkt);
-    //possibili miglioramenti eliminare le lock -> UN Produttore e un consumatore
-    pthread_mutex_lock(&mtx_gop);
-    pushList(&testa_gop, &coda_gop, el);
-    pthread_cond_signal(&cond_gop);
-    pthread_mutex_unlock(&mtx_gop);
 }

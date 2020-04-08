@@ -40,12 +40,4 @@ typedef struct lista{
     void* el;
 }list;
 
-/* lista usata per passare pacchetti per decodificare con ffmpeg*/
-typedef struct lista_dec {
-    struct lista_dec* next;
-    AVPacket* packet; //se NULL chiudi il thread
-    AVFrame* frame;
-    AVCodecContext* context;
-    int Nframe;
-}list_dec;
 #endif /* string_h */

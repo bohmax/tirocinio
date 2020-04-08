@@ -8,23 +8,6 @@
 
 #include "lista.h"
 
-gop_info* setElGOP(int gop_num){
-    gop_info* new = malloc(sizeof(gop_info));
-    memset(new, '\0', sizeof(gop_info));
-    new->gop_num = gop_num;
-    new->num_frame = 0;
-    return new;
-}
-
-rtp* setElRTP(u_char* buf, int size, int npkt){
-    rtp* new = malloc(sizeof(rtp));
-    memset(new, '\0', sizeof(rtp));
-    new->packet = buf;
-    new->size = size;
-    new->n_pkt = npkt;
-    return new;
-}
-
 void freeList(list** head, list** coda, void(* del)(void** el)){
     while (*head) {
         void* el = popList(head, coda);
@@ -56,19 +39,8 @@ void* popList(list** head, list** coda){
     return el;
 }
 
-void freeGOP(void** el){
-    gop_info* info = (gop_info*) (*el);
-    free(info);
-    info = NULL;
-}
 
-void freeRTP(void** el){
-    rtp* todestroy = (rtp*) (*el);
-    free(todestroy->packet);
-    free(todestroy);
-    todestroy = NULL;
-}
-
+/*
 void pushListDec(list_dec** head, list_dec** coda, AVFrame* frame, int nFrame){
     list_dec* new = malloc(sizeof(list_dec));
     new->Nframe = nFrame;
@@ -96,3 +68,4 @@ void freeListDec(list_dec** el) {
     free(*el);
     *el = NULL;
 }
+ */

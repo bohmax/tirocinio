@@ -18,9 +18,11 @@ rtp* setElRTP(u_char* buf, int size, int npkt);
 
 void freeRTP(void** el); //list è un elemento occhio al nome
 
-gop_info* setElGOP(int gop_num);
+gop_info* setElGOP(int gop_num, int start);
 
 void freeGOP(void** el);
+
+void freeORD(void** el);
 
 void freeKeyHash(void* el);
 

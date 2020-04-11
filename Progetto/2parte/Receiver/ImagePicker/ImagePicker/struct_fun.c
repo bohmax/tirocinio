@@ -14,11 +14,13 @@ int* setkeyHash(int key){
     return num;
 }
 
-gop_info* setElGOP(int gop_num){
+gop_info* setElGOP(int gop_num, int start){
     gop_info* new = malloc(sizeof(gop_info));
     memset(new, '\0', sizeof(gop_info));
     new->gop_num = gop_num;
+    new->start_seq = start;
     new->num_frame = 0;
+    new->end_seq = 0;
     return new;
 }
 
@@ -28,6 +30,9 @@ rtp* setElRTP(u_char* buf, int size, int npkt){
     new->packet = buf;
     new->size = size;
     new->n_pkt = npkt;
+    new->nal_type = 0;
+    new->state = 0;
+    new->decoder = 0;
     return new;
 }
 
@@ -35,6 +40,13 @@ void freeGOP(void** el){
     gop_info* info = (gop_info*) (*el);
     free(info);
     info = NULL;
+}
+
+void freeORD(void** el){
+    //rtp* todestroy = (rtp*) (*el);
+    //free(todestroy->packet);
+    //free(todestroy);
+    //todestroy = NULL;
 }
 
 void freeRTP(void** el){
@@ -51,7 +63,5 @@ void freeKeyHash(void* el){
 }
 
 void freeElHash(void* el){
-    u_char* todestroy = (u_char*) el;
-    free(todestroy);
-    todestroy = NULL;
+    freeRTP(&el);
 }

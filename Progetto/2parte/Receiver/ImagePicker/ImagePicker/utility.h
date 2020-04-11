@@ -47,11 +47,15 @@ extern int esci;            /* indica l'uscita dal programma*/
 extern int num_pkt; //numero dei pacchetti arrivati
 extern pthread_mutex_t mtx_gop;  /* mutex per fare produttore consumatore con il decodificatore */
 extern pthread_cond_t cond_gop;  /* variabile di condizione per produttore consumatore*/
+extern pthread_mutex_t mtx_ord;  /* mutex per ordinare i pacchetti */
+extern pthread_cond_t cond_ord;  /* variabile di condizione per ordinare i pacchetti*/
 extern pthread_mutex_t mtx_dec;  /* mutex per fare produttore consumatore con il decodificatore */
 extern pthread_cond_t cond_dec;  /* variabile di condizione per produttore consumatore*/
 extern pthread_mutex_t mtxhash[HSIZE/DIV]; /* mutex della tabella hash*/
 extern list* testa_gop;
 extern list* coda_gop;  /* coda della lista sopra */
+extern list* testa_ord; /* lista dei pacchetti */
+extern list* coda_ord;
 extern list* testa_dec;
 extern list* coda_dec;  /* coda della lista sopra */
 extern sigset_t sigset_usr;

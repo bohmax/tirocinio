@@ -16,6 +16,8 @@ void* segnali(void *arg);
 
 void* DecoderThread(void* arg);
 
+void* ReaderPacket(void* arg);
+
 void* GOPThread(void* arg);
 
 void* listenerThread(void* arg);

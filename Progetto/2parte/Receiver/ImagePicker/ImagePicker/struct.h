@@ -25,6 +25,8 @@ typedef struct gop_data {
 typedef struct el_gop {
     //char path[64]; //path su cui sarà salvato il gop
     int gop_num;
+    int start_seq; //inizio del gop da analizzare
+    int end_seq; //fine gop
     int num_frame;
 }gop_info;
 
@@ -33,6 +35,9 @@ typedef struct el_rtp {
     u_char* packet;
     int size;
     int n_pkt;
+    unsigned int nal_type; //viene calcolato in addPacketToGOP
+    unsigned int state; //128 se è lo start, 64 se è la fine, 0 altrimenti
+    unsigned int decoder; //se state == 128 allora contiene le informazioni per decodificare il frame
 }rtp;
 
 typedef struct lista{

@@ -73,8 +73,7 @@ int decode_to_png(AVFrame *pFrame, int FrameNo, int gop_num) {
             fprintf(stderr, "Error during encoding\n");
             exit(1);
         }
-        
-        //savePNG(packet, FrameNo, gop_num);
+        savePNG(packet, FrameNo, gop_num);
         av_packet_unref(packet);
     }
     av_packet_free(&packet);

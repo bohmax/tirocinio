@@ -8,6 +8,15 @@
 
 #include "threads.h"
 
+//manda la chiusura su una lista
+void send_close(list* testa, list* coda, pthread_mutex_t mtx, pthread_cond_t cond, void(* del)(void** el), void* el){
+    pthread_mutex_lock(&mtx);
+    freeList(&testa, &coda, del); //pulisci la liste così si è sicuri dell' uscita
+    pushList(&testa, &coda, el);
+    pthread_cond_signal(&cond);
+    pthread_mutex_unlock(&mtx);
+}
+
 void* segnali(void *arg){
     int ris;
     printf("Avviato\n");
@@ -20,22 +29,16 @@ void* segnali(void *arg){
     //per qualsiasi segnare registrato termina pcap_loop
     pcap_breakloop(handle);
     /* invia chiusura gop thread */
-    //pulisci la liste così si è sicuri dell' uscita
-    pthread_mutex_lock(&mtx_gop);
-    freeList(&testa_gop, &coda_gop, &freeRTP);
-    pushList(&testa_gop, &coda_gop, setElRTP(NULL, -1, -1));
-    pthread_cond_signal(&cond_gop);
-    pthread_mutex_unlock(&mtx_gop);
+    send_close(testa_gop, coda_gop, mtx_gop, cond_gop, &freeRTP, setElRTP(NULL, -1, -1));
+    send_close(testa_ord, coda_ord, mtx_ord, cond_ord, &freeGOP, setElGOP(-1, -1));
     //svuota la lista di decodifica
     pthread_mutex_lock(&mtx_dec);
     freeList(&testa_dec, &coda_dec, &freeGOP);
-    pthread_mutex_unlock(&mtx_dec);
     for (int i = 0; i < NUMDECODERTHR; i++) {
-        pthread_mutex_lock(&mtx_dec);
-        pushList(&testa_dec, &coda_dec, setElGOP(-1));
+        pushList(&testa_dec, &coda_dec, setElGOP(-1, -1));
         pthread_cond_signal(&cond_dec);
-        pthread_mutex_unlock(&mtx_dec);
     }
+    pthread_mutex_unlock(&mtx_dec);
     esci = 1;
     return (void*) 0;
 }
@@ -59,13 +62,48 @@ void* DecoderThread(void* arg){
     return (void*) 0;
 }
 
-void* GOPThread(void* arg){
-    printf("Thread che crea GOP creato\n");
-    int chiudi = 0, count = 0, gop_count = 0, ret;
+void* ReaderPacket(void* arg){
+    printf("Thread per salvare un GOP\n");
+    int esci = 0, ret;
+    gop_info* el = NULL;
+    int* from = malloc(sizeof(int));
     pthread_t decodehandler[NUMDECODERTHR];
     for (int i = 0; i < NUMDECODERTHR; i++)
         SYSFREE(ret,pthread_create(&decodehandler[i],NULL,&DecoderThread,NULL),0,"thread")
-    gop_info* info = setElGOP(gop_count);
+    while (!esci) {
+        pthread_mutex_lock(&mtx_ord);
+        while (testa_ord == NULL)
+            pthread_cond_wait(&cond_ord, &mtx_ord);
+        el = popList(&testa_ord, &coda_ord);
+        pthread_mutex_unlock(&mtx_ord);
+        if (el->start_seq != -1) {
+            usleep(200000); //aspetta altri pacchetti per 200ms
+            *from = el->start_seq;
+            save_GOP(from, el);
+            pthread_mutex_lock(&mtx_dec);
+            pushList(&testa_dec, &coda_dec, el);
+            pthread_cond_signal(&cond_dec);
+            pthread_mutex_unlock(&mtx_dec);
+        }
+        else esci = 1;
+    }
+    free(from);
+    for (int i = 0; i < NUMDECODERTHR; i++) {
+        pthread_mutex_lock(&mtx_dec);
+        pushList(&testa_dec, &coda_dec, setElGOP(-1, -1));
+        pthread_cond_signal(&cond_dec);
+        pthread_mutex_unlock(&mtx_dec);
+    }
+    for (int i = 0; i < NUMDECODERTHR; i++)
+        SYSFREE(ret,pthread_join(decodehandler[i],NULL),0,"decode 1")
+    printf("Thread per salvare il GOP chiude\n");
+    return (void*) 0;
+}
+
+void* GOPThread(void* arg){
+    printf("Thread che crea GOP creato\n");
+    int chiudi = 0, count = 0, gop_count = 0, ret;
+    gop_info* info = setElGOP(gop_count, -1);
     rtp* el = NULL;
     while (!chiudi) {
         pthread_mutex_lock(&mtx_gop);
@@ -74,13 +112,15 @@ void* GOPThread(void* arg){
         el = popList(&testa_gop, &coda_gop);
         pthread_mutex_unlock(&mtx_gop);
         if (el->packet) {
-            if(workOnPacket(el, info)){ //attualmente è copiato attravarso una alloc, potrei togliere la memcpy
-                pthread_mutex_lock(&mtx_dec);
-                pushList(&testa_dec, &coda_dec, info);
-                pthread_cond_signal(&cond_dec);
-                pthread_mutex_unlock(&mtx_dec);
+            if((ret = workOnPacket(el, info)) == -1) //attualmente è copiato attravarso una alloc, potrei togliere la memcpy
+                freeRTP((void**)&el);
+            else if (ret > 0){ //ret ha il numero di sequenza del nuovo pacchetto
+                pthread_mutex_lock(&mtx_ord);
+                pushList(&testa_ord, &coda_ord, info);
+                pthread_cond_signal(&cond_ord);
+                pthread_mutex_unlock(&mtx_ord);
                 gop_count++;
-                info = setElGOP(gop_count);
+                info = setElGOP(gop_count, ret);
             }
         }
         else {
@@ -89,16 +129,12 @@ void* GOPThread(void* arg){
         }
         count++;
     }
-    freeGOP((void**)(&info));
-    for (int i = 0; i < NUMDECODERTHR; i++) {
-        pthread_mutex_lock(&mtx_dec);
-        pushList(&testa_dec, &coda_dec, setElGOP(-1));
-        pthread_cond_signal(&cond_dec);
-        pthread_mutex_unlock(&mtx_dec);
-    }
-    for (int i = 0; i < NUMDECODERTHR; i++)
-        SYSFREE(ret,pthread_join(decodehandler[i],NULL),0,"decode 1")
-    
+    /* libera lista e invia segnale di chiusura a order */
+    pthread_mutex_lock(&mtx_ord);
+    pushList(&testa_ord, &coda_ord, info);
+    pushList(&testa_ord, &coda_ord, setElGOP(-1, -1));
+    pthread_cond_signal(&cond_ord);
+    pthread_mutex_unlock(&mtx_ord);
     printf("Thread che crea GOP esce\n");
     return (void*) 0;
 }

@@ -167,7 +167,7 @@ int create_image(gop_info* info){
     AVFormatContext *c = NULL;
     char GOPName[64];
     sprintf(GOPName, "%s-%06d", path_file, info->gop_num);
-    logging("decodificando il file %s", GOPName);
+    logging("decodificando il file %s\n", GOPName);
     result = avformat_open_input(&c, GOPName, NULL, NULL);
     if ( result != 0){
         logging("Cannot open file");

@@ -36,7 +36,7 @@
  *
  * @returns the hash index
  */
-unsigned int hash_pjw(void *key) {
+static unsigned int hash_pjw(void *key) {
   char *datum = (char *)key;
   unsigned int hash_value, i;
 
@@ -50,13 +50,9 @@ unsigned int hash_pjw(void *key) {
   return (hash_value);
 }
 
-static int string_compare(void *a, void *b) {
-  return (strcmp((char *)a, (char *)b) == 0);
-}
-
-static inline int ulong_key_compare(void *key1, void *key2) {
-  return (*(unsigned long *)key1 == *(unsigned long *)key2);
-}
+//static int string_compare(void *a, void *b) {
+//  return (strcmp((char *)a, (char *)b) == 0);
+//}
 /**
  * Create a new hash table.
  *

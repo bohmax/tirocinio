@@ -40,7 +40,7 @@ void create_header_information(u_char* rtpdata, unsigned int fragment_type, int 
     }
 }
 
-int addPacketToGOP(u_char* rtpdata, int rtpdata_len, int seq_num, rtp* el, gop_info* info){
+int addPacketToGOP(u_char* rtpdata, int rtpdata_len, uint16_t seq_num, rtp* el, gop_info* info){
     int return_value = 0;
     //Nal header
     unsigned int start_bit = rtpdata[1] & 0x80;  // 128 se e' il primo pacchetto del frame 0 altrimenti
@@ -91,10 +91,13 @@ int addPacketToGOP(u_char* rtpdata, int rtpdata_len, int seq_num, rtp* el, gop_i
     return return_value;
 }
 
-void* insert_hash(int primarykey, void* insert){
-    int* key = setkeyHash(primarykey);
-    int buck = hash_pjw(key) % hash_packet->nbuckets;
+void* insert_hash(uint16_t primarykey, void* insert){
+    uint16_t* key = setkeyHash(primarykey);
+    int buck = hash_packet->hash_function(key) % hash_packet->nbuckets;
     int mtxi = buck / DIV;
+    if (mtxi<0) {
+        printf("biru");
+    }
     pthread_mutex_lock(&mtxhash[mtxi]);
     void* ris = icl_hash_insert(hash_packet, key, insert);
     pthread_mutex_unlock(&mtxhash[mtxi]);
@@ -103,7 +106,7 @@ void* insert_hash(int primarykey, void* insert){
 
 void* find_hash(int* primarykey){
     //int* key = setkeyHash(primarykey);
-    int buck = hash_pjw(primarykey) % hash_packet->nbuckets;
+    int buck = hash_packet->hash_function(primarykey) % hash_packet->nbuckets;
     int mtxi = buck / DIV;
     pthread_mutex_lock(&mtxhash[mtxi]);
     void* ris = icl_hash_find(hash_packet, primarykey);
@@ -111,12 +114,11 @@ void* find_hash(int* primarykey){
     return ris;
 }
 int workOnPacket(rtp* el, gop_info* info){
-    
     int to_rtphdr = sizeof(struct udphdr);
     int to_rtpdata = to_rtphdr + sizeof(rtphdr);
     int rtpdata_len = el->size - to_rtpdata;
     rtphdr* rtpHeader = (rtphdr*)(el->packet + to_rtphdr);
-    int seq = ntohs(rtpHeader->seq_num);
+    uint16_t seq = ntohs(rtpHeader->seq_num);
     //printf("RTP number [%d], timestamp of this packet is: %d\n", ntohs(rtpHeader->seq_num), ntohl(rtpHeader->TS)); //function converts the unsigned short integer netshort from network byte order to host byte order.
     u_char* rtpdata = (u_char*) (el->packet + to_rtpdata);
     //FU - A - -HEADER
@@ -129,7 +131,7 @@ int workOnPacket(rtp* el, gop_info* info){
     //SPS e PPS ricevuti inizio a creare il GOP
     else if (fragment_type == 28) //dati per il GOP
         return addPacketToGOP(rtpdata, rtpdata_len, seq, el, info);
-    return 0;
+    return -1;
 }
 
 rtp* save_packet(rtp* el, int to_rtpdata, int* from, int end_seq){

@@ -9,12 +9,12 @@
 #include "threads.h"
 
 //manda la chiusura su una lista
-void send_close(list* testa, list* coda, pthread_mutex_t mtx, pthread_cond_t cond, void(* del)(void** el), void* el){
-    pthread_mutex_lock(&mtx);
-    freeList(&testa, &coda, del); //pulisci la liste così si è sicuri dell' uscita
-    pushList(&testa, &coda, el);
-    pthread_cond_signal(&cond);
-    pthread_mutex_unlock(&mtx);
+void send_close(list** testa, list** coda, pthread_mutex_t* mtx, pthread_cond_t* cond, void(* del)(void** el), void* el){
+    pthread_mutex_lock(mtx);
+    freeList(testa, coda, del); //pulisci la liste così si è sicuri dell' uscita
+    pushList(testa, coda, el);
+    pthread_cond_signal(cond);
+    pthread_mutex_unlock(mtx);
 }
 
 void* segnali(void *arg){
@@ -29,8 +29,8 @@ void* segnali(void *arg){
     //per qualsiasi segnare registrato termina pcap_loop
     pcap_breakloop(handle);
     /* invia chiusura gop thread */
-    send_close(testa_gop, coda_gop, mtx_gop, cond_gop, &freeRTP, setElRTP(NULL, -1, -1));
-    send_close(testa_ord, coda_ord, mtx_ord, cond_ord, &freeGOP, setElGOP(-1, -1));
+    send_close(&testa_gop, &coda_gop, &mtx_gop, &cond_gop, &freeRTP, setElRTP(NULL, -1, -1));
+    send_close(&testa_ord, &coda_ord, &mtx_ord, &cond_ord, &freeGOP, setElGOP(-1, -1));
     //svuota la lista di decodifica
     pthread_mutex_lock(&mtx_dec);
     freeList(&testa_dec, &coda_dec, &freeGOP);
@@ -88,6 +88,7 @@ void* ReaderPacket(void* arg){
         else esci = 1;
     }
     free(from);
+    freeGOP((void**)&el);
     for (int i = 0; i < NUMDECODERTHR; i++) {
         pthread_mutex_lock(&mtx_dec);
         pushList(&testa_dec, &coda_dec, setElGOP(-1, -1));
@@ -143,12 +144,11 @@ void* listenerThread(void* arg){
     //creazione thread che gestisce
     int ret;
     pthread_t gophandler;
-    rtp* end = setElRTP(NULL, -1,-1);
     SYSFREE(ret,pthread_create(&gophandler,NULL,&GOPThread,NULL),0,"thread")
     pcap_loop(handle, -1, sniff, NULL);
     printf("Thread in uscita\n");
     pthread_mutex_lock(&mtx_gop);
-    pushList(&testa_gop, &coda_gop, end);
+    pushList(&testa_gop, &coda_gop, setElRTP(NULL, -1,-1));
     pthread_cond_signal(&cond_gop);
     pthread_mutex_unlock(&mtx_gop);
     SYSFREE(ret,pthread_join(gophandler,NULL),0,"gop 1")

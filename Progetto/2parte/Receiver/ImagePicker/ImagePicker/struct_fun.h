@@ -11,7 +11,7 @@
 
 #include "utility.h"
 
-int* setkeyHash(int key);
+uint16_t* setkeyHash(uint16_t key);
 
 /* funzioni per inizializzare e liberare elementi che verrano inseriti nella lista*/
 rtp* setElRTP(u_char* buf, int size, int npkt);

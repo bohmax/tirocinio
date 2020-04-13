@@ -30,6 +30,7 @@ sigset_t sigset_usr; /* maschera globale dei segnali */
 pcap_t* handle;    /* packet capture handle */
 pthread_t segnal; //thread listener e segnali
 int esci = 0;
+
 pcap_if_t* find_device(pcap_if_t* alldevs, char* name){
     pcap_if_t *d=alldevs;
     while(d!=NULL) {
@@ -91,7 +92,7 @@ int main(int argc, const char * argv[]) {
     char errbuf[PCAP_ERRBUF_SIZE];  /* error buffer */
     char stringfilter[] = "not icmp and udp and dst port 5000";
     pcap_if_t *alldevs = NULL;
-    pcap_if_t *device = NULL;
+    //pcap_if_t *device = NULL;
     pthread_t listener, order;
     struct bpf_program fp;        /* to hold compiled program */
     if (argc != 4) exit(EXIT_FAILURE);
@@ -101,10 +102,10 @@ int main(int argc, const char * argv[]) {
     if(pcap_findalldevs(&alldevs, errbuf)==-1) exit(EXIT_FAILURE);
     set_signal();
     inizialize_thread();
-    hash_packet = icl_hash_create(HSIZE, NULL, NULL);
+    hash_packet = icl_hash_create(HSIZE, uint16_hash_function, uint_16t_key_compare);
     //avvio thread che gestisce i segnali
     SYSFREE(notused,pthread_create(&segnal,NULL,&segnali,NULL),0,"thread")
-    device = find_device(alldevs, dev_name); //se è null provo a leggere offline
+    //device = find_device(alldevs, dev_name); //se è null provo a leggere offline
     // fetch the network address and network mask
     set_handler(dev_name, &fp, stringfilter, errbuf);
     printf("Sniffing on device: %s\n", dev_name);
@@ -124,7 +125,7 @@ int main(int argc, const char * argv[]) {
     pcap_freealldevs(alldevs);
     freeList(&testa_gop, &coda_gop, &freeRTP);
     freeList(&testa_dec, &coda_dec, &freeGOP);
-    freeList(&testa_ord, &coda_ord, &freeORD);
+    freeList(&testa_ord, &coda_ord, &freeGOP);
     icl_hash_destroy(hash_packet, &freeKeyHash, &freeElHash);
     //create_image();
     clock_t end = clock();

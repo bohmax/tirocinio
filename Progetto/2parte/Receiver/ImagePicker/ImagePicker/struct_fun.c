@@ -8,8 +8,8 @@
 
 #include "struct_fun.h"
 
-int* setkeyHash(int key){
-    int* num = malloc(sizeof(int));
+uint16_t* setkeyHash(uint16_t key){
+    uint16_t* num = malloc(sizeof(uint16_t));
     *num = key;
     return num;
 }

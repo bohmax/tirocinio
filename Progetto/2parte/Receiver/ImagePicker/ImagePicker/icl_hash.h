@@ -12,6 +12,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdint.h>
 
 #if defined(c_plusplus) || defined(__cplusplus)
 extern "C" {
@@ -30,8 +31,6 @@ typedef struct icl_hash_s {
   unsigned int (*hash_function)(void *);
   int (*hash_key_compare)(void *, void *);
 } icl_hash_t;
-
-unsigned int hash_pjw(void *key);
 
 icl_hash_t *icl_hash_create(int nbuckets, unsigned int (*hash_function)(void *),
                             int (*hash_key_compare)(void *, void *));
@@ -69,8 +68,8 @@ static inline unsigned int fnv_hash_function(void *key, int len) {
 }
 
 /* funzioni hash per per l'hashing di interi */
-static inline unsigned int ulong_hash_function(void *key) {
-  unsigned int x = *(unsigned int *)key;
+static inline unsigned int uint16_hash_function(void *key) {
+  uint16_t x = *(uint16_t *)key;
   x = ((x >> 16) ^ x) * 0x45d9f3b;
   x = ((x >> 16) ^ x) * 0x45d9f3b;
   x = (x >> 16) ^ x;
@@ -78,6 +77,18 @@ static inline unsigned int ulong_hash_function(void *key) {
   // int len = sizeof(unsigned long);
   // unsigned int hashval = fnv_hash_function( key, len );
   // return hashval;
+}
+
+static inline int ulong_key_compare(void *key1, void *key2) {
+  // unsigned int x = *(unsigned long*)key1;
+  // unsigned int y = *(unsigned long*)key2;
+  return (*(unsigned long *)key1 == *(unsigned long *)key2);
+}
+
+static inline int uint_16t_key_compare(void *key1, void *key2) {
+  // unsigned int x = *(unsigned long*)key1;
+  // unsigned int y = *(unsigned long*)key2;
+  return (*(uint16_t *)key1 == *(uint16_t *)key2);
 }
 #define icl_hash_foreach(ht, tmpint, tmpent, kp, dp)       \
   for (tmpint = 0; tmpint < ht->nbuckets; tmpint++)        \

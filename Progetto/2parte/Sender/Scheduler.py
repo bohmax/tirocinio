@@ -3,6 +3,7 @@ from Operatore import Operatore
 from Sender import Sender
 from scapy.all import *
 from Timing import *
+import time
 
 """
 argv[1] deve contenere il path del file pcap che dovra essere letto
@@ -19,15 +20,21 @@ ip = "192.168.1.216"
 if sys.argv[3] == 'cnr':
     ip = '146.48.55.216'
 elif sys.argv[3] == 'mac':
-    ip = '192.168.1.125'
+    ip = '192.168.1.176'
+elif sys.argv[3] == 'ub_s':
+    ip = '192.168.1.176'
+elif sys.argv[3] == 'win_s':
+    ip = '192.168.1.176'
 elif sys.argv[3] == 'myself':
-    ip = '192.168.1.91'
+    ip = '127.0.0.1'
 prob = int(sys.argv[4])
 porta = 4999
 
 
 if __name__ == "__main__":
     timer = Timing()
+    start = time.time()
+    start_time = 0
     for i in nomi_operatori:
         porta += 1
         operatore = Operatore(name=i, prob=prob, loss=0, delay=0)
@@ -35,13 +42,14 @@ if __name__ == "__main__":
 
     packets = rdpcap(sys.argv[1], 1)
     pkt_start_time = packets[0].time
-    start = time.time()
     numero_totale_pkt = 0
     for index, pkt in enumerate(PcapReader(sys.argv[1])):
         if IP in pkt and UDP in pkt and pkt[UDP].dport == 5000:
             print(index)
             try:
-                timer.nsleep(timer.delay_calculator(pkt.time, pkt_start_time, start))
+                if start_time == 0:
+                    start_time = time.time()
+                timer.nsleep(timer.delay_calculator(pkt.time, pkt_start_time, start_time))
                 sender[0].send(pkt, index)
             except KeyboardInterrupt:
                 numero_totale_pkt = index
@@ -50,3 +58,4 @@ if __name__ == "__main__":
     arr = sender[0].getOperatore().getNotSent()
     print(arr)
     print('Numero di elementi non inviati ' + str(len(arr)) + ' su ' + str(numero_totale_pkt) + ' pacchetti')
+    print("--- %s seconds ---" % (time.time() - start))

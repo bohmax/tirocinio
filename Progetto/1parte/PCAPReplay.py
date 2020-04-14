@@ -1,6 +1,6 @@
 from scapy.all import *
 from scapy.layers.inet import IP, UDP
-from scapy.layers.l2 import Ether
+from scapy.layers.l2 import Ether, Loopback
 from Progetto.Timing import Timing
 
 """
@@ -22,18 +22,25 @@ timing = Timing()
 packets = rdpcap(sys.argv[1], 1000)
 for index, pkt in enumerate(packets):
     if IP in pkt and UDP in pkt and pkt["UDP"].dport == 5000:
-        pkt[Ether].src = src_mac_address #se non lo modifico il router droppa l'inoltro
-        pkt[IP].src = ip_src
-        pkt[IP].dst = ip_home_dst
-        del pkt[Ether].dst  # attenzione se si conosce la destinazione è meglio specificarla per evitare problemi di lentazza(es. destinazione non raggiungibile)
+        if LOOPBACK_NAME != sys.argv[2]: # non è l'interfaccia di loopback
+            pkt[IP].src = ip_src
+            pkt[IP].dst = ip_home_dst
+            pkt[Ether].src = src_mac_address #se non lo modifico il router droppa l'inoltro
+            del pkt[Ether].dst  # attenzione se si conosce la destinazione è meglio specificarla per evitare problemi di lentazza(es. destinazione non raggiungibile)
+            ''' 
+            Attenzione se non si specifica il mac address src ci sono problemi di lentezza, se il mac address sorgente
+            non è disponibile facendo una richiesta arp al router si incorrono a gravi problemi di lentezza
+            pktm = Ether(src=src_mac_address)/pkt.getlayer(IP)
+            pktm.time = pkt.time
+            '''
+        else:
+            pkt[IP].src = localhost
+            pkt[IP].dst = localhost
+            temp = Loopback()/pkt.getlayer(IP)
+            temp.time = pkt.time
+            pkt = temp
         del pkt[IP].chksum
         del pkt[UDP].chksum  # il checksum è calcolato anche per l'ip destinazione e ip sorgente, è necessario ricalcolarlo
-        ''' 
-        Attenzione se non si specifica il mac address src ci sono problemi di lentezza, se il mac address sorgente
-        non è disponibile facendo una richiesta arp al router si incorrono a gravi problemi di lentezza
-        pktm = Ether(src=src_mac_address)/pkt.getlayer(IP)
-        pktm.time = pkt.time
-        '''
         arr.append(pkt)
     else:
         print(index)

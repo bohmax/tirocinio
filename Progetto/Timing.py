@@ -33,6 +33,7 @@ class Timing:
     def delay_calculator(self, current_pkt_time, first_pkt_time, start_calculation_time):
         ideale = current_pkt_time - first_pkt_time
         attuale = time.time() - start_calculation_time
+        #print('ideale: ' + str(ideale) + ' attuale: ' + str(attuale) + ' diff: ' + str(ideale - Decimal(attuale)))
         return ideale - Decimal(attuale)
 
     """
@@ -50,13 +51,13 @@ class Timing:
     @:param nsec1:  nanosecondi compresi tra 0 e 999999999 specifica per quanto tempo il thread deve dormire
     """
     def nsleep(self, temp):
-        if not self.windows:
-            timespec = Timespec()
-            timespec.tv_sec = c_long(0)
-            timespec.tv_nsec = c_long(temp*nanosec)
-            self.libc.nanosleep(pointer(timespec), None)
-        else:
-            self.__winsleep(temp)
+        #if not self.windows: #too slow :(
+        #    timespec = Timespec()
+        #    timespec.tv_sec = c_long(0)
+        #    timespec.tv_nsec = c_long(temp*nanosec)
+        #    print(self.libc.nanosleep(pointer(timespec), None))
+        #else:
+        self.__winsleep(temp)
 
     """
     Windows non ha sleep, simulo solo una nsleep in maniera brutale

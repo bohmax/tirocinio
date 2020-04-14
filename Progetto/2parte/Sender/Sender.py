@@ -1,6 +1,6 @@
 from scapy.all import *
 from scapy.layers.inet import IP, UDP
-from scapy.layers.l2 import Ether
+from scapy.layers.l2 import Ether, Loopback
 
 
 class Sender:
@@ -18,13 +18,20 @@ class Sender:
         self._src_ip = get_if_addr(conf.iface)
         self._ip = ip
         self._port = port
+        if LOOPBACK_NAME != interface: #non è un interfaccia di loopback
+            self._loopback = False
+        else:
+            self._loopback = True
 
     def send(self, pkt, indice):
-        pkt[Ether].src = self._mac_address
+        if not self._loopback:
+            pkt[Ether].src = self._mac_address
+            del pkt[Ether].dst
+        else:
+            pkt = Loopback()/pkt.getlayer(IP)
         pkt[IP].src = self._src_ip
         pkt[IP].dst = self._ip
         pkt[UDP].dport = self._port
-        del pkt[Ether].dst
         del pkt[IP].chksum
         del pkt[UDP].chksum
         self._operatore.send(self._socket, pkt, indice)

@@ -14,6 +14,18 @@ int num_gop = 0; //numero di GOP trovati
 int current_seq = 0; /* ultimo numero di sequenza letto più grande */
 int start_gop = 0; /* inizio di un nuovo gop */
 int end_new_gop = 0; /* aggiorna quando finisce il nuovo gop */
+int to_iphdr = sizeof(struct ether_header);
+int to_udphdr = sizeof(struct ether_header) + sizeof(struct ip);
+int to_rtphdr = sizeof(struct ether_header) + sizeof(struct ip) + sizeof(struct udphdr);
+int to_rtpdata = sizeof(struct ether_header) + sizeof(struct ip) + sizeof(struct udphdr) + sizeof(rtphdr);
+
+void loopbackstarter(u_char* buff){
+    int zero = 0, due = 2;
+    memcpy(buff, &due, 1);
+    memcpy(buff+1, &zero, 1);
+    memcpy(buff+2, &zero, 1);
+    memcpy(buff+3, &zero, 1);
+}
 
 void starter(string* stringa){
     int zero = 0, uno = 1;
@@ -95,17 +107,13 @@ void* insert_hash(uint16_t primarykey, void* insert){
     uint16_t* key = setkeyHash(primarykey);
     int buck = hash_packet->hash_function(key) % hash_packet->nbuckets;
     int mtxi = buck / DIV;
-    if (mtxi<0) {
-        printf("biru");
-    }
     pthread_mutex_lock(&mtxhash[mtxi]);
     void* ris = icl_hash_insert(hash_packet, key, insert);
     pthread_mutex_unlock(&mtxhash[mtxi]);
     return ris;
 }
 
-void* find_hash(int* primarykey){
-    //int* key = setkeyHash(primarykey);
+void* find_hash(uint16_t* primarykey){
     int buck = hash_packet->hash_function(primarykey) % hash_packet->nbuckets;
     int mtxi = buck / DIV;
     pthread_mutex_lock(&mtxhash[mtxi]);
@@ -113,14 +121,48 @@ void* find_hash(int* primarykey){
     pthread_mutex_unlock(&mtxhash[mtxi]);
     return ris;
 }
+
+int delete_hash(uint16_t* primarykey){
+    int buck = hash_packet->hash_function(primarykey) % hash_packet->nbuckets;
+    int mtxi = buck / DIV;
+    pthread_mutex_lock(&mtxhash[mtxi]);
+    int ris = icl_hash_delete(hash_packet, primarykey, &freeKeyHash, &freeElHash);
+    pthread_mutex_unlock(&mtxhash[mtxi]);
+    return ris;
+}
+
+void send_packet(rtp* el){
+    if (!from_loopback) {
+        struct udphdr* udp = (struct udphdr*) (el->packet + to_udphdr);
+        udp->uh_dport = htons(DPORT);
+        udp->uh_sum = 0;
+        int new_len = to_iphdr - 4;
+        u_char* buff = el->packet + new_len;
+        loopbackstarter(buff);
+        if (pcap_sendpacket(loopback, buff, el->size - new_len) != 0)
+            fprintf(stderr,"\nError sending the packet: %s\n", pcap_geterr(loopback));
+    }
+    else{
+        struct udphdr* udp = (struct udphdr*) (el->packet + to_udphdr - sizeof(struct ether_header) + 4);
+        udp->uh_dport = htons(DPORT);
+        udp->uh_sum = 0;
+        /* Send down the packet */
+        if (pcap_sendpacket(loopback, el->packet, el->size) != 0)
+            fprintf(stderr,"\nError sending the packet: %s\n", pcap_geterr(loopback));
+    }
+}
+
 int workOnPacket(rtp* el, gop_info* info){
-    int to_rtphdr = sizeof(struct udphdr);
-    int to_rtpdata = to_rtphdr + sizeof(rtphdr);
-    int rtpdata_len = el->size - to_rtpdata;
-    rtphdr* rtpHeader = (rtphdr*)(el->packet + to_rtphdr);
+    int ris = 0;
+    int fix = 0;
+    if (from_loopback) {
+        fix = (int) sizeof(struct ether_header) - 4;
+    }
+    int rtpdata_len = el->size - to_rtpdata + fix;
+    rtphdr* rtpHeader = (rtphdr*)(el->packet + to_rtphdr - fix);
     uint16_t seq = ntohs(rtpHeader->seq_num);
     //printf("RTP number [%d], timestamp of this packet is: %d\n", ntohs(rtpHeader->seq_num), ntohl(rtpHeader->TS)); //function converts the unsigned short integer netshort from network byte order to host byte order.
-    u_char* rtpdata = (u_char*) (el->packet + to_rtpdata);
+    u_char* rtpdata = (u_char*) (el->packet + to_rtpdata - fix);
     //FU - A - -HEADER
     //unsigned int forbidden = rtpdata[0] & 0x80 >> 7;
     //unsigned int nri = rtpdata[0] & 0x60 >> 5;
@@ -129,21 +171,25 @@ int workOnPacket(rtp* el, gop_info* info){
     if(!inizialized)
         create_header_information(rtpdata, fragment_type, rtpdata_len);
     //SPS e PPS ricevuti inizio a creare il GOP
-    else if (fragment_type == 28) //dati per il GOP
-        return addPacketToGOP(rtpdata, rtpdata_len, seq, el, info);
+    else if (fragment_type == 28){ //dati per il GOP
+        if ((ris = addPacketToGOP(rtpdata, rtpdata_len, seq, el, info)) != -1) {
+            send_packet(el);
+        }
+        return ris;
+    } else send_packet(el);
     return -1;
 }
 
-rtp* save_packet(rtp* el, int to_rtpdata, int* from, int end_seq){
-    int rtpdata_len = el->size - to_rtpdata;
-    u_char* rtpdata =(u_char*) (el->packet + to_rtpdata);
+rtp* save_packet(FILE* f, rtp* el, uint16_t* from, int fix, int end_seq){
+    int rtpdata_len = el->size - to_rtpdata + fix;
+    u_char* rtpdata =(u_char*) (el->packet + to_rtpdata - fix);
     if (el->state == 128) {
         starter(&payload);
         memcpy(payload.value+payload.size, &(el->decoder), 1); // header per il frame
         payload.size += 1;
     }
     add(&payload, rtpdata+2, rtpdata_len-2);
-    icl_hash_delete(hash_packet, from, &freeKeyHash, &freeElHash);
+    delete_hash(from);
     el = NULL;
     while (end_seq > *from && !el) {
         (*from)++;
@@ -152,21 +198,23 @@ rtp* save_packet(rtp* el, int to_rtpdata, int* from, int end_seq){
     return el;
 }
 
-void save_GOP(int *from, gop_info* info){
+void save_GOP(uint16_t *from, gop_info* info){
     FILE* f = NULL;
-    int to_rtphdr = sizeof(struct udphdr);
-    int to_rtpdata = to_rtphdr + sizeof(rtphdr);
     char GOPName[64];
+    int fix = 0;
+    if (from_loopback)
+        fix = (int) sizeof(struct ether_header) - 4;
     sprintf(GOPName, "%s-%06d", path_file, info->gop_num);
     if (!(f = fopen(GOPName, "w")))
         printf("Error: %s\n", strerror(errno));
     rtp* el = find_hash(from);
     add(&payload, metadata.value, metadata.size);
     while(el && el->nal_type == 5){ // copia tutto il pacchetto header
-        el = save_packet(el, to_rtpdata, from, info->end_seq);
+        f = fopen(GOPName, "w");
+        el = save_packet(f,el, from, fix, info->end_seq);
     }
     while (el && el->nal_type != 5) { //copia finchè non trova un nuovo GOP
-        el = save_packet(el, to_rtpdata, from, info->end_seq);
+        el = save_packet(f,el, from, fix, info->end_seq);
     }
     fwrite(payload.value, 1, payload.size, f);
     payload.size = 0;

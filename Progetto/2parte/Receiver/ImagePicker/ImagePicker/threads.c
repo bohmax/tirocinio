@@ -66,7 +66,7 @@ void* ReaderPacket(void* arg){
     printf("Thread per salvare un GOP\n");
     int esci = 0, ret;
     gop_info* el = NULL;
-    int* from = malloc(sizeof(int));
+    uint16_t* from = malloc(sizeof(uint16_t));
     pthread_t decodehandler[NUMDECODERTHR];
     for (int i = 0; i < NUMDECODERTHR; i++)
         SYSFREE(ret,pthread_create(&decodehandler[i],NULL,&DecoderThread,NULL),0,"thread")
@@ -158,12 +158,10 @@ void* listenerThread(void* arg){
 void sniff(u_char *useless, const struct pcap_pkthdr* pkthdr, const u_char*
               packet){
     num_pkt += 1;
-    int to_udp = (sizeof(struct ether_header) + sizeof(struct ip));
-    int udplen = pkthdr->len - to_udp;
     //setto gli elementi per poter passare i dati a un altro thread
-    u_char* buf = malloc(sizeof(u_char)*udplen);
-    memcpy(buf, packet+to_udp, udplen);
-    rtp* el= setElRTP(buf, udplen, num_pkt);
+    u_char* buf = malloc(sizeof(u_char)*pkthdr->len);
+    memcpy(buf, packet, pkthdr->len);
+    rtp* el= setElRTP(buf, pkthdr->len, num_pkt);
     //possibili miglioramenti eliminare le lock -> UN Produttore e un consumatore
     pthread_mutex_lock(&mtx_gop);
     pushList(&testa_gop, &coda_gop, el);

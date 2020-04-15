@@ -29,11 +29,16 @@ int addPacketToGOP(u_char* rtpdata, int rtpdata_len, uint16_t seq_num, rtp* el, 
 int workOnPacket(rtp* el, gop_info* info);
 
 //prende i pacchetti dalla tabella hash a partire da from, fino a un nuovo GOP
-void save_GOP(int *from, gop_info* info);
+void save_GOP(uint16_t *from, gop_info* info);
+
+//spedisce i pacchetti
+void send_packet(rtp* el);
 
 //funzioni di utlità per la tabella hash
 void* insert_hash(uint16_t primarykey, void* insert);
 
-void* find_hash(int* primarykey);
+void* find_hash(uint16_t* primarykey);
+
+int delete_hash(uint16_t* primarykey);
 
 #endif /* receiver_h */

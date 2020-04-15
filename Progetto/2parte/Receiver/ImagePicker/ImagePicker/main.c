@@ -28,24 +28,37 @@ pthread_cond_t cond_ord = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t mtxhash[HSIZE/DIV];
 sigset_t sigset_usr; /* maschera globale dei segnali */
 pcap_t* handle;    /* packet capture handle */
+pcap_t* loopback;    /* loopback interface */
 pthread_t segnal; //thread listener e segnali
 int esci = 0;
+int from_loopback = 0;
 
-pcap_if_t* find_device(pcap_if_t* alldevs, char* name){
+void get_loopback(pcap_if_t* alldevs,char name[] ,char errbuf[]){
     pcap_if_t *d=alldevs;
+    printf("%d\n", PCAP_IF_LOOPBACK);
     while(d!=NULL) {
-        if(strncmp(name, d->name, strlen(name))==0)
-            return d;
+        if(d->flags == PCAP_IF_LOOPBACK || d->flags == 55){
+            loopback = pcap_open_live(d->name, BUFSIZ, 0, 5000, errbuf); //ottengo uno sniffer
+            if(loopback == NULL){
+                printf("pcap_open() loopback failed due to [%s]\n", errbuf);
+                exit(1);
+            }
+            if (!strcmp(d->name, name)) {
+                from_loopback = 1;
+            }
+            return;
+        }
         d=d->next;
     }
-    return NULL;
+    printf("Cannot find loopback interface\n");
+    exit(1);
 }
 
 void set_handler(char device_name[], struct bpf_program* fp, char filter[], char errbuf[]){
     bpf_u_int32 pMask;            /* subnet mask */
     bpf_u_int32 pNet;             /* ip address*/
-    
-    handle = pcap_open_live(device_name, BUFSIZ, 0, 5000, errbuf); //ottengo uno sniffer
+    printf("%d\n", BUFSIZ);
+    handle = pcap_open_live(device_name, MAXBUF, 0, 100, errbuf); //ottengo uno sniffer
     if(handle == NULL){
         handle = pcap_open_offline(device_name, errbuf);
         if(handle == NULL){
@@ -101,6 +114,7 @@ int main(int argc, const char * argv[]) {
     path_image = (char*) argv[3];
     if(pcap_findalldevs(&alldevs, errbuf)==-1) exit(EXIT_FAILURE);
     set_signal();
+    get_loopback(alldevs, dev_name, errbuf);
     inizialize_thread();
     hash_packet = icl_hash_create(HSIZE, uint16_hash_function, uint_16t_key_compare);
     //avvio thread che gestisce i segnali
@@ -122,6 +136,7 @@ int main(int argc, const char * argv[]) {
     printf("Uscita dal programma\n");
     pcap_freecode(&fp);
     pcap_close(handle);
+    pcap_close(loopback);
     pcap_freealldevs(alldevs);
     freeList(&testa_gop, &coda_gop, &freeRTP);
     freeList(&testa_dec, &coda_dec, &freeGOP);

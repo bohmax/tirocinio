@@ -40,6 +40,13 @@ typedef struct el_rtp {
     unsigned int decoder; //se state == 128 allora contiene le informazioni per decodificare il frame
 }rtp;
 
+typedef struct stats{
+    int perdita; //tasso di perdita
+    int lunghezza; //lunghezza media perdita
+    int delay; //delay medio della finestra
+    int ordine; //numero di pacchetti fuori ordine
+}stat_t;
+
 typedef struct lista{
     void* next;
     void* el;

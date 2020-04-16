@@ -12,23 +12,29 @@ class Sender:
     """
 
     def __init__(self, operatore, interface, ip, port):
-        self._socket = conf.L2socket(iface=interface)
+        if LOOPBACK_NAME != interface:  # non è un interfaccia di loopback
+            self._loopback = False
+        else:
+            self._loopback = True
+        if not self._loopback or not sys.platform == 'linux':
+            self._socket = conf.L2socket(iface=interface)
+        else:
+            conf.L3socket = L3RawSocket(iface=interface)  # https://scapy.readthedocs.io/en/latest/troubleshooting.html
+            self._socket = conf.L3socket
         self._operatore = operatore
         self._mac_address = get_if_hwaddr(conf.iface)
         self._src_ip = get_if_addr(conf.iface)
         self._ip = ip
         self._port = port
-        if LOOPBACK_NAME != interface: #non è un interfaccia di loopback
-            self._loopback = False
-        else:
-            self._loopback = True
 
     def send(self, pkt, indice):
         if not self._loopback:
             pkt[Ether].src = self._mac_address
             del pkt[Ether].dst
-        else:
+        elif not sys.platform == 'linux':
             pkt = Loopback()/pkt.getlayer(IP)
+        else:
+            pkt = pkt.getlayer(IP)
         pkt[IP].src = self._src_ip
         pkt[IP].dst = self._ip
         pkt[UDP].dport = self._port

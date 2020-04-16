@@ -132,30 +132,45 @@ int delete_hash(uint16_t* primarykey){
 }
 
 void send_packet(rtp* el){
+    struct udphdr* udp = NULL;
     if (!from_loopback) {
-        struct udphdr* udp = (struct udphdr*) (el->packet + to_udphdr);
+        udp = (struct udphdr*) (el->packet + to_udphdr);
         udp->uh_dport = htons(DPORT);
         udp->uh_sum = 0;
-        int new_len = to_iphdr - 4;
-        u_char* buff = el->packet + new_len;
-        loopbackstarter(buff);
-        if (pcap_sendpacket(loopback, buff, el->size - new_len) != 0)
-            fprintf(stderr,"\nError sending the packet: %s\n", pcap_geterr(loopback));
+        if (datalink_loopback == DLT_NULL) {
+            int new_len = to_iphdr - 4;
+            u_char* buff = el->packet + new_len;
+            loopbackstarter(buff);
+            if (pcap_sendpacket(loopback, buff, el->size - new_len) != 0)
+                fprintf(stderr,"\nError sending the packet: %s\n", pcap_geterr(loopback));
+        }
+        else{ //se devo spedire un altro pacchetto ethernet devo azzerarlo
+            struct ether_header* eth = (struct ether_header *) el->packet;
+            for (int i=0; i < MAC_LENGHT; i++) {
+                eth->ether_dhost[i] = MAC_ADDR;
+                eth->ether_shost[i] = MAC_ADDR;
+            }
+            if (pcap_sendpacket(loopback, el->packet, el->size) != 0)
+                fprintf(stderr,"\nError sending the packet: %s\n", pcap_geterr(loopback));
+        }
     }
     else{
-        struct udphdr* udp = (struct udphdr*) (el->packet + to_udphdr - sizeof(struct ether_header) + 4);
+        if (datalink_loopback == DLT_NULL)
+            udp = (struct udphdr*) (el->packet + to_udphdr - sizeof(struct ether_header) + 4);
+        else udp = (struct udphdr*) (el->packet + to_udphdr);
         udp->uh_dport = htons(DPORT);
         udp->uh_sum = 0;
         /* Send down the packet */
         if (pcap_sendpacket(loopback, el->packet, el->size) != 0)
             fprintf(stderr,"\nError sending the packet: %s\n", pcap_geterr(loopback));
     }
+    el->sent = 1;
 }
 
 int workOnPacket(rtp* el, gop_info* info){
     int ris = 0;
     int fix = 0;
-    if (from_loopback) {
+    if (from_loopback && datalink_loopback == DLT_NULL) {
         fix = (int) sizeof(struct ether_header) - 4;
     }
     int rtpdata_len = el->size - to_rtpdata + fix;
@@ -189,6 +204,7 @@ rtp* save_packet(FILE* f, rtp* el, uint16_t* from, int fix, int end_seq){
         payload.size += 1;
     }
     add(&payload, rtpdata+2, rtpdata_len-2);
+    while (!el->sent); //aspetto che il pacchetto è stato spedito
     delete_hash(from);
     el = NULL;
     while (end_seq > *from && !el) {
@@ -202,7 +218,7 @@ void save_GOP(uint16_t *from, gop_info* info){
     FILE* f = NULL;
     char GOPName[64];
     int fix = 0;
-    if (from_loopback)
+    if (from_loopback && datalink_loopback == DLT_NULL)
         fix = (int) sizeof(struct ether_header) - 4;
     sprintf(GOPName, "%s-%06d", path_file, info->gop_num);
     if (!(f = fopen(GOPName, "w")))
@@ -210,7 +226,6 @@ void save_GOP(uint16_t *from, gop_info* info){
     rtp* el = find_hash(from);
     add(&payload, metadata.value, metadata.size);
     while(el && el->nal_type == 5){ // copia tutto il pacchetto header
-        f = fopen(GOPName, "w");
         el = save_packet(f,el, from, fix, info->end_seq);
     }
     while (el && el->nal_type != 5) { //copia finchè non trova un nuovo GOP

@@ -33,6 +33,7 @@ rtp* setElRTP(u_char* buf, int size, int npkt){
     new->nal_type = 0;
     new->state = 0;
     new->decoder = 0;
+    new->sent = 0;
     return new;
 }
 

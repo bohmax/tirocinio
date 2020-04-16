@@ -40,6 +40,7 @@ extern icl_hash_t* hash_packet;       /* hash table contentente i pacchetti da o
 extern pcap_t* handle;    /* packet capture handle */
 extern pcap_t* loopback;    /* loopback interface */
 extern int from_loopback;   /* booleano, indica se loopback e handle coincidono */
+extern int datalink_loopback;   /* intero che indica il tipo del livello 2 del pacchetto */
 extern string payload;    /* contiene la codifica di un h264 */
 extern string metadata; //dovrà contenere SPS e PPS
 //extern gop gop_info;      /* contiene le informazioni di un gop */

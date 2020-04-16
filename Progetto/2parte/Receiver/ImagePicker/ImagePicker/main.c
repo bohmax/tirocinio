@@ -32,10 +32,10 @@ pcap_t* loopback;    /* loopback interface */
 pthread_t segnal; //thread listener e segnali
 int esci = 0;
 int from_loopback = 0;
+int datalink_loopback = 0;
 
 void get_loopback(pcap_if_t* alldevs,char name[] ,char errbuf[]){
     pcap_if_t *d=alldevs;
-    printf("%d\n", PCAP_IF_LOOPBACK);
     while(d!=NULL) {
         if(d->flags == PCAP_IF_LOOPBACK || d->flags == 55){
             loopback = pcap_open_live(d->name, BUFSIZ, 0, 5000, errbuf); //ottengo uno sniffer
@@ -43,21 +43,20 @@ void get_loopback(pcap_if_t* alldevs,char name[] ,char errbuf[]){
                 printf("pcap_open() loopback failed due to [%s]\n", errbuf);
                 exit(1);
             }
-            if (!strcmp(d->name, name)) {
-                from_loopback = 1;
-            }
+            datalink_loopback = pcap_datalink(loopback);
+            if (!strcmp(d->name, name))
+                    from_loopback = 1;
             return;
         }
         d=d->next;
     }
-    printf("Cannot find loopback interface\n");
+    printf("Cannot find loopback interface, other thank loopback intrface you need a loopback with DLT_NULL link type header\n");
     exit(1);
 }
 
 void set_handler(char device_name[], struct bpf_program* fp, char filter[], char errbuf[]){
     bpf_u_int32 pMask;            /* subnet mask */
     bpf_u_int32 pNet;             /* ip address*/
-    printf("%d\n", BUFSIZ);
     handle = pcap_open_live(device_name, MAXBUF, 0, 100, errbuf); //ottengo uno sniffer
     if(handle == NULL){
         handle = pcap_open_offline(device_name, errbuf);

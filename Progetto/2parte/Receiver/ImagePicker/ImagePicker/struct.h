@@ -38,6 +38,7 @@ typedef struct el_rtp {
     unsigned int nal_type; //viene calcolato in addPacketToGOP
     unsigned int state; //128 se è lo start, 64 se è la fine, 0 altrimenti
     unsigned int decoder; //se state == 128 allora contiene le informazioni per decodificare il frame
+    int sent; /* permette di sapere se il pacchetto è stato spedito */
 }rtp;
 
 typedef struct stats{

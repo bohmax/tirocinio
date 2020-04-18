@@ -15,9 +15,9 @@ int current_seq = 0; /* ultimo numero di sequenza letto più grande */
 int start_gop = 0; /* inizio di un nuovo gop */
 int end_new_gop = 0; /* aggiorna quando finisce il nuovo gop */
 int to_iphdr = sizeof(struct ether_header);
-int to_udphdr = sizeof(struct ether_header) + sizeof(struct ip);
-int to_rtphdr = sizeof(struct ether_header) + sizeof(struct ip) + sizeof(struct udphdr);
-int to_rtpdata = sizeof(struct ether_header) + sizeof(struct ip) + sizeof(struct udphdr) + sizeof(rtphdr);
+int to_udphdr = sizeof(struct ether_header) + sizeof(sniff_ip_t);
+int to_rtphdr = sizeof(struct ether_header) + sizeof(sniff_ip_t) + sizeof(struct udphdr);
+int to_rtpdata = sizeof(struct ether_header) + sizeof(sniff_ip_t) + sizeof(struct udphdr) + sizeof(rtphdr);
 
 void loopbackstarter(u_char* buff){
     int zero = 0, due = 2;
@@ -155,14 +155,20 @@ void send_packet(rtp* el){
         }
     }
     else{
+        u_char* send = NULL;
+        int fix = 0, new_size = 0;
         if (datalink_loopback == DLT_NULL)
-            udp = (struct udphdr*) (el->packet + to_udphdr - sizeof(struct ether_header) + 4);
-        else udp = (struct udphdr*) (el->packet + to_udphdr);
+            fix = sizeof(struct ether_header) - 4;
+        udp = (struct udphdr*) (el->packet + to_udphdr - fix);
         udp->uh_dport = htons(DPORT);
         udp->uh_sum = 0;
-        /* Send down the packet */
-        if (pcap_sendpacket(loopback, el->packet, el->size) != 0)
-            fprintf(stderr,"\nError sending the packet: %s\n", pcap_geterr(loopback));
+        send = (el->packet + to_rtphdr - fix);
+        new_size = el->size - to_rtphdr + fix;
+        if (sendto(fd, send, new_size, 0, (struct sockaddr*)&servaddr, sizeof(servaddr)) < 0){
+            perror("cannot send message");
+        }
+        //if (pcap_sendpacket(loopback, el->packet, el->size) != 0) //si potrebbe usare se non fosse per linux
+        //    fprintf(stderr,"\nError sending the packet: %s\n", pcap_geterr(loopback));
     }
     el->sent = 1;
 }

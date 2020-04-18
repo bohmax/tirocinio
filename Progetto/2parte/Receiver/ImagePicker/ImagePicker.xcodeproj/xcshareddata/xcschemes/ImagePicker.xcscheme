@@ -34,6 +34,7 @@
       buildConfiguration = "Debug"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
+      debugAsWhichUser = "root"
       launchStyle = "0"
       useCustomWorkingDirectory = "NO"
       ignoresPersistentStateOnLaunch = "NO"
@@ -52,7 +53,7 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "en0 /Users/maxuel/Desktop/gopfolder_r/gop /Users/maxuel/Desktop/imgfolder_r/frame"
+            argument = "lo0 /Users/maxuel/Desktop/gopfolder_r/gop /Users/maxuel/Desktop/imgfolder_r/frame"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument

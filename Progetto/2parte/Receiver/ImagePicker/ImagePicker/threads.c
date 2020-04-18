@@ -8,6 +8,10 @@
 
 #include "threads.h"
 
+void termination_loopback(int signum){
+    pcap_breakloop(handle);
+}
+
 //manda la chiusura su una lista
 void send_close(list** testa, list** coda, pthread_mutex_t* mtx, pthread_cond_t* cond, void(* del)(void** el), void* el){
     pthread_mutex_lock(mtx);
@@ -26,8 +30,9 @@ void* segnali(void *arg){
         exit(0);
     }
     printf("In uscita..\n");
-    //per qualsiasi segnare registrato termina pcap_loop
-    pcap_breakloop(handle);
+    //in modo da chiudere listener
+    pthread_kill(listener, SIGALRM);
+    /* inviare qui un pacchetto falzo per essere sicuri di uscire */
     /* invia chiusura gop thread */
     send_close(&testa_gop, &coda_gop, &mtx_gop, &cond_gop, &freeRTP, setElRTP(NULL, -1, -1));
     send_close(&testa_ord, &coda_ord, &mtx_ord, &cond_ord, &freeGOP, setElGOP(-1, -1));
@@ -105,6 +110,7 @@ void* GOPThread(void* arg){
     printf("Thread che crea GOP creato\n");
     int chiudi = 0, count = 0, gop_count = 0, ret;
     gop_info* info = setElGOP(gop_count, -1);
+    stat_t* statistiche = setStat();
     rtp* el = NULL;
     while (!chiudi) {
         pthread_mutex_lock(&mtx_gop);
@@ -133,7 +139,6 @@ void* GOPThread(void* arg){
     /* libera lista e invia segnale di chiusura a order */
     pthread_mutex_lock(&mtx_ord);
     pushList(&testa_ord, &coda_ord, info);
-    pushList(&testa_ord, &coda_ord, setElGOP(-1, -1));
     pthread_cond_signal(&cond_ord);
     pthread_mutex_unlock(&mtx_ord);
     printf("Thread che crea GOP esce\n");
@@ -143,6 +148,13 @@ void* GOPThread(void* arg){
 void* listenerThread(void* arg){
     //creazione thread che gestisce
     int ret;
+    /* registro l'handler per sigusr1*/
+    struct sigaction new_action;
+    new_action.sa_handler = termination_loopback;
+    new_action.sa_flags = 0;
+    ERRORSYSHEANDLER(ret,sigemptyset(&new_action.sa_mask),-1,"NO SIGEMPY LIST")
+    ERRORSYSHEANDLER(ret,sigaction(SIGALRM, &new_action, NULL),-1,"NO ALARM")
+    /* */
     pthread_t gophandler;
     SYSFREE(ret,pthread_create(&gophandler,NULL,&GOPThread,NULL),0,"thread")
     pcap_loop(handle, -1, sniff, NULL);
@@ -155,8 +167,7 @@ void* listenerThread(void* arg){
     return (void*)0;
 }
 
-void sniff(u_char *useless, const struct pcap_pkthdr* pkthdr, const u_char*
-              packet){
+void sniff(u_char *useless, const struct pcap_pkthdr* pkthdr, const u_char* packet){
     num_pkt += 1;
     //setto gli elementi per poter passare i dati a un altro thread
     u_char* buf = malloc(sizeof(u_char)*pkthdr->len);

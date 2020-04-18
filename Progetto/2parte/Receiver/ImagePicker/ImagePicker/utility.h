@@ -26,7 +26,7 @@
 #include <libavutil/imgutils.h>
 #include <libswscale/swscale.h>
 #include <libavformat/avio.h>
-#include "rtp.h"
+#include "packet_structs.h"
 #include "define.h"
 #include "struct.h"
 #include "struct_fun.h"
@@ -36,6 +36,9 @@
 #include "lista.h"
 #include "icl_hash.h"
 
+extern struct sockaddr_in servaddr; /* indirizzi per inoltrare i pacchetti udp*/
+extern int fd; /* file descriptor del socket */
+extern pthread_t listener, segnal; //thread listener e segnali
 extern icl_hash_t* hash_packet;       /* hash table contentente i pacchetti da ordinare */
 extern pcap_t* handle;    /* packet capture handle */
 extern pcap_t* loopback;    /* loopback interface */

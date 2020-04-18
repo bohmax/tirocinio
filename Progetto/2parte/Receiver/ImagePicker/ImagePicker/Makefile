@@ -23,7 +23,7 @@ OBJECTS		=	receiver.o \
 INCLUDE_FILES   = 	utility.h
 
 
-.PHONY: all clean cleanall
+.PHONY: all client
 .SUFFIXES: .c .h
 
 %: %.c
@@ -33,9 +33,10 @@ INCLUDE_FILES   = 	utility.h
 	$(CC) $(CFLAGS) $(INCLUDES) $(OPTFLAGS) -c -o $@ $<
 
 all		: $(TARGETS)
+		  chmod +x start.sh
 
 
-client: main.o libclient.a $(INCLUDE_FILES)
+client: main.o libclient.a
 	$(CC) $(CFLAGS) $(INCLUDES) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 libclient.a: $(OBJECTS)

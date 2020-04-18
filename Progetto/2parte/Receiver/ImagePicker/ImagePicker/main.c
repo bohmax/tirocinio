@@ -29,23 +29,29 @@ pthread_mutex_t mtxhash[HSIZE/DIV];
 sigset_t sigset_usr; /* maschera globale dei segnali */
 pcap_t* handle;    /* packet capture handle */
 pcap_t* loopback;    /* loopback interface */
-pthread_t segnal; //thread listener e segnali
+pthread_t listener, segnal; //thread listener e segnali
 int esci = 0;
 int from_loopback = 0;
 int datalink_loopback = 0;
+struct sockaddr_in servaddr;
+int fd;
 
 void get_loopback(pcap_if_t* alldevs,char name[] ,char errbuf[]){
     pcap_if_t *d=alldevs;
     while(d!=NULL) {
         if(d->flags == PCAP_IF_LOOPBACK || d->flags == 55){
-            loopback = pcap_open_live(d->name, BUFSIZ, 0, 5000, errbuf); //ottengo uno sniffer
-            if(loopback == NULL){
-                printf("pcap_open() loopback failed due to [%s]\n", errbuf);
-                exit(1);
+            if (!strcmp(d->name, name)){
+                from_loopback = 1;
+                loopback = handle;
+            }
+            else{
+                loopback = pcap_open_live(d->name, BUFSIZ, 0, 5000, errbuf); //ottengo uno sniffer
+                if(loopback == NULL){
+                    printf("pcap_open() loopback failed due to [%s]\n", errbuf);
+                    exit(1);
+                }
             }
             datalink_loopback = pcap_datalink(loopback);
-            if (!strcmp(d->name, name))
-                    from_loopback = 1;
             return;
         }
         d=d->next;
@@ -97,6 +103,23 @@ void inizialize_thread(){
     }
 }
 
+void set_socket(){
+    fd = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if(fd<0){
+        perror("cannot open socket");
+        exit(-1);
+    }
+    //if(setsockopt(fd, IPPROTO_IP, IP_HDRINCL, val, sizeof(one)) < 0){
+    //    perror("setsockopt() error");
+    //    exit(-1);
+    //}
+    
+    bzero(&servaddr,sizeof(servaddr));
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_addr.s_addr = inet_addr(HOSTNAME);
+    servaddr.sin_port = htons(DPORT);
+}
+
 int main(int argc, const char * argv[]) {
     clock_t begin = clock();
     int notused; //variabile usata per memorizzare valori di ritorno di alcune chiamate di sistema
@@ -105,15 +128,15 @@ int main(int argc, const char * argv[]) {
     char stringfilter[] = "not icmp and udp and dst port 5000";
     pcap_if_t *alldevs = NULL;
     //pcap_if_t *device = NULL;
-    pthread_t listener, order;
+    pthread_t order;
     struct bpf_program fp;        /* to hold compiled program */
     if (argc != 4) exit(EXIT_FAILURE);
     dev_name = (char*) argv[1];
     path_file = (char*) argv[2];
     path_image = (char*) argv[3];
     if(pcap_findalldevs(&alldevs, errbuf)==-1) exit(EXIT_FAILURE);
+    set_socket();
     set_signal();
-    get_loopback(alldevs, dev_name, errbuf);
     inizialize_thread();
     hash_packet = icl_hash_create(HSIZE, uint16_hash_function, uint_16t_key_compare);
     //avvio thread che gestisce i segnali
@@ -121,21 +144,27 @@ int main(int argc, const char * argv[]) {
     //device = find_device(alldevs, dev_name); //se è null provo a leggere offline
     // fetch the network address and network mask
     set_handler(dev_name, &fp, stringfilter, errbuf);
+    get_loopback(alldevs, dev_name, errbuf);
     printf("Sniffing on device: %s\n", dev_name);
     // For every packet received, call the callback function
     // ctrl-c to stop sniffing
-    //
     SYSFREE(notused,pthread_create(&order,NULL,&ReaderPacket,NULL),0,"thread")
     SYSFREE(notused,pthread_create(&listener,NULL,&listenerThread,NULL),0,"thread")
     printf("Aspetta i thread\n");
     SYSFREE(notused,pthread_join(listener,NULL),0,"listener 1")
+    /* libera lista e invia segnale di chiusura a order */
+    pthread_mutex_lock(&mtx_ord);
+    pushList(&testa_ord, &coda_ord, setElGOP(-1, -1));
+    pthread_cond_signal(&cond_ord);
+    pthread_mutex_unlock(&mtx_ord);
     SYSFREE(notused,pthread_join(order,NULL),0,"listener 1")
     pthread_kill(segnal, SIGINT); //manda un segnale al thread
     SYSFREE(notused,pthread_join(segnal,NULL),0,"join 1")
     printf("Uscita dal programma\n");
     pcap_freecode(&fp);
     pcap_close(handle);
-    pcap_close(loopback);
+    if (!loopback)
+        pcap_close(loopback);
     pcap_freealldevs(alldevs);
     freeList(&testa_gop, &coda_gop, &freeRTP);
     freeList(&testa_dec, &coda_dec, &freeGOP);
@@ -143,6 +172,7 @@ int main(int argc, const char * argv[]) {
     icl_hash_destroy(hash_packet, &freeKeyHash, &freeElHash);
     //create_image();
     clock_t end = clock();
+    close(fd);
     printf("Tempo di esecuzione %f\n", (double)(end - begin) / CLOCKS_PER_SEC);
     return 0;
 }

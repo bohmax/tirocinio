@@ -14,9 +14,9 @@
             filePath = "ImagePicker/main.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "144"
-            endingLineNumber = "144"
-            landmarkName = "get_loopback(alldevs, name, errbuf)"
+            startingLineNumber = "173"
+            endingLineNumber = "173"
+            landmarkName = "main(argc, argv)"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
@@ -30,8 +30,8 @@
             filePath = "ImagePicker/receiver.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "190"
-            endingLineNumber = "190"
+            startingLineNumber = "196"
+            endingLineNumber = "196"
             landmarkName = "workOnPacket(el, info)"
             landmarkType = "9">
          </BreakpointContent>
@@ -46,8 +46,8 @@
             filePath = "ImagePicker/receiver.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "187"
-            endingLineNumber = "187"
+            startingLineNumber = "193"
+            endingLineNumber = "193"
             landmarkName = "workOnPacket(el, info)"
             landmarkType = "9">
          </BreakpointContent>
@@ -206,9 +206,9 @@
             filePath = "ImagePicker/main.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "140"
-            endingLineNumber = "140"
-            landmarkName = "get_loopback(alldevs, name, errbuf)"
+            startingLineNumber = "169"
+            endingLineNumber = "169"
+            landmarkName = "main(argc, argv)"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
@@ -222,9 +222,9 @@
             filePath = "ImagePicker/main.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "139"
-            endingLineNumber = "139"
-            landmarkName = "get_loopback(alldevs, name, errbuf)"
+            startingLineNumber = "168"
+            endingLineNumber = "168"
+            landmarkName = "main(argc, argv)"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
@@ -270,8 +270,8 @@
             filePath = "ImagePicker/receiver.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "180"
-            endingLineNumber = "180"
+            startingLineNumber = "186"
+            endingLineNumber = "186"
             landmarkName = "workOnPacket(el, info)"
             landmarkType = "9">
          </BreakpointContent>
@@ -286,8 +286,8 @@
             filePath = "ImagePicker/threads.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "15"
-            endingLineNumber = "15"
+            startingLineNumber = "19"
+            endingLineNumber = "19"
             landmarkName = "send_close(testa, coda, mtx, cond, el)"
             landmarkType = "9">
          </BreakpointContent>
@@ -302,8 +302,8 @@
             filePath = "ImagePicker/receiver.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "209"
-            endingLineNumber = "209"
+            startingLineNumber = "215"
+            endingLineNumber = "215"
             landmarkName = "save_packet(f, el, from, fix, end_seq)"
             landmarkType = "9">
          </BreakpointContent>
@@ -318,8 +318,8 @@
             filePath = "ImagePicker/struct_fun.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "67"
-            endingLineNumber = "67"
+            startingLineNumber = "79"
+            endingLineNumber = "79"
             landmarkName = "freeElHash(el)"
             landmarkType = "9">
          </BreakpointContent>
@@ -334,9 +334,9 @@
             filePath = "ImagePicker/main.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "143"
-            endingLineNumber = "143"
-            landmarkName = "get_loopback(alldevs, name, errbuf)"
+            startingLineNumber = "172"
+            endingLineNumber = "172"
+            landmarkName = "main(argc, argv)"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
@@ -366,9 +366,9 @@
             filePath = "ImagePicker/main.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "121"
-            endingLineNumber = "121"
-            landmarkName = "get_loopback(alldevs, name, errbuf)"
+            startingLineNumber = "144"
+            endingLineNumber = "144"
+            landmarkName = "main(argc, argv)"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
@@ -382,9 +382,9 @@
             filePath = "ImagePicker/main.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "92"
-            endingLineNumber = "92"
-            landmarkName = "get_loopback(alldevs, name, errbuf)"
+            startingLineNumber = "98"
+            endingLineNumber = "98"
+            landmarkName = "inizialize_thread()"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
@@ -398,8 +398,8 @@
             filePath = "ImagePicker/main.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "40"
-            endingLineNumber = "40"
+            startingLineNumber = "42"
+            endingLineNumber = "42"
             landmarkName = "get_loopback(alldevs, name, errbuf)"
             landmarkType = "9">
          </BreakpointContent>
@@ -414,8 +414,8 @@
             filePath = "ImagePicker/receiver.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "189"
-            endingLineNumber = "189"
+            startingLineNumber = "195"
+            endingLineNumber = "195"
             landmarkName = "workOnPacket(el, info)"
             landmarkType = "9">
          </BreakpointContent>
@@ -430,8 +430,8 @@
             filePath = "ImagePicker/receiver.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "188"
-            endingLineNumber = "188"
+            startingLineNumber = "194"
+            endingLineNumber = "194"
             landmarkName = "workOnPacket(el, info)"
             landmarkType = "9">
          </BreakpointContent>
@@ -478,8 +478,8 @@
             filePath = "ImagePicker/receiver.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "178"
-            endingLineNumber = "178"
+            startingLineNumber = "184"
+            endingLineNumber = "184"
             landmarkName = "workOnPacket(el, info)"
             landmarkType = "9">
          </BreakpointContent>
@@ -494,8 +494,8 @@
             filePath = "ImagePicker/receiver.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "176"
-            endingLineNumber = "176"
+            startingLineNumber = "182"
+            endingLineNumber = "182"
             landmarkName = "workOnPacket(el, info)"
             landmarkType = "9">
          </BreakpointContent>
@@ -526,8 +526,8 @@
             filePath = "ImagePicker/receiver.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "227"
-            endingLineNumber = "227"
+            startingLineNumber = "233"
+            endingLineNumber = "233"
             landmarkName = "save_GOP(from, info)"
             landmarkType = "9">
          </BreakpointContent>
@@ -542,8 +542,8 @@
             filePath = "ImagePicker/receiver.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "201"
-            endingLineNumber = "201"
+            startingLineNumber = "207"
+            endingLineNumber = "207"
             landmarkName = "save_packet(f, el, from, fix, end_seq)"
             landmarkType = "9">
          </BreakpointContent>
@@ -558,8 +558,8 @@
             filePath = "ImagePicker/receiver.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "208"
-            endingLineNumber = "208"
+            startingLineNumber = "214"
+            endingLineNumber = "214"
             landmarkName = "save_packet(f, el, from, fix, end_seq)"
             landmarkType = "9">
          </BreakpointContent>
@@ -574,8 +574,8 @@
             filePath = "ImagePicker/receiver.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "184"
-            endingLineNumber = "184"
+            startingLineNumber = "190"
+            endingLineNumber = "190"
             landmarkName = "workOnPacket(el, info)"
             landmarkType = "9">
          </BreakpointContent>
@@ -590,8 +590,8 @@
             filePath = "ImagePicker/threads.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "162"
-            endingLineNumber = "162"
+            startingLineNumber = "173"
+            endingLineNumber = "173"
             landmarkName = "sniff(useless, pkthdr, packet)"
             landmarkType = "9">
          </BreakpointContent>
@@ -606,9 +606,9 @@
             filePath = "ImagePicker/main.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "60"
-            endingLineNumber = "60"
-            landmarkName = "get_loopback(alldevs, name, errbuf)"
+            startingLineNumber = "66"
+            endingLineNumber = "66"
+            landmarkName = "set_handler(device_name, fp, filter, errbuf)"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
@@ -622,9 +622,89 @@
             filePath = "ImagePicker/receiver.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "159"
-            endingLineNumber = "159"
+            startingLineNumber = "162"
+            endingLineNumber = "162"
             landmarkName = "send_packet(el)"
+            landmarkType = "9">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "B319CD2C-C8AD-4F05-ABB6-88AEAB8EF82F"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "ImagePicker/threads.c"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "12"
+            endingLineNumber = "12"
+            landmarkName = "termination_loopback(signum)"
+            landmarkType = "9">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "DDF151D5-A4B9-4DDA-B8F6-5D6E2B8D7809"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "ImagePicker/receiver.c"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "167"
+            endingLineNumber = "167"
+            landmarkName = "send_packet(el)"
+            landmarkType = "9">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "D5512DC7-0D65-4F70-A923-CC4D007E1000"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "ImagePicker/main.c"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "107"
+            endingLineNumber = "107"
+            landmarkName = "set_socket()"
+            landmarkType = "9">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "B5283D07-8629-4A23-9C1D-44C7E41CB3C1"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "ImagePicker/receiver.c"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "165"
+            endingLineNumber = "165"
+            landmarkName = "send_packet(el)"
+            landmarkType = "9">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "BFBA3460-F4FE-4031-8992-F05CF05B2DEF"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "ImagePicker/threads.c"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "113"
+            endingLineNumber = "113"
+            landmarkName = "GOPThread(arg)"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>

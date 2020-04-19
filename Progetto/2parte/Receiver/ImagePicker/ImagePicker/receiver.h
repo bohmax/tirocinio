@@ -26,7 +26,7 @@ int addPacketToGOP(u_char* rtpdata, int rtpdata_len, uint16_t seq_num, rtp* el, 
 
 //stub per chiamare addPacket e e create_header in autonomia
 //ritorna uno se il gop è terminato 0 altrimenti
-int workOnPacket(rtp* el, gop_info* info);
+int workOnPacket(rtp* el, gop_info* info, int stat_index);
 
 //prende i pacchetti dalla tabella hash a partire da from, fino a un nuovo GOP
 void save_GOP(uint16_t *from, gop_info* info);

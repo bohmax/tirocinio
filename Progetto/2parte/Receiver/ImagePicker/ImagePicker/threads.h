@@ -11,8 +11,13 @@
 
 #include "utility.h"
 
+/* funzione handler dei segnali che vengono inviati al thread listener per chiudere*/
+void termination_loopback(int signum);
+
 //thread per la gestione dei segnali per far terminare il programma
 void* segnali(void *arg);
+
+void* statThread(void* arg);
 
 void* DecoderThread(void* arg);
 

@@ -8,8 +8,17 @@
 
 #include "threads.h"
 
+/* funzione handler dei segnali che vengono inviati al thread listener per chiudere*/
 void termination_loopback(int signum){
-    pcap_breakloop(handle);
+    int volatile i = 0, trovato = 0;
+    pthread_t self = pthread_self();
+    while(i<NUMLISTTHR && !trovato){
+        if (self == listener[i]) {
+            pcap_breakloop(handle[i]);
+            trovato = 1;
+        }
+        i++;
+    }
 }
 
 //manda la chiusura su una lista
@@ -30,8 +39,11 @@ void* segnali(void *arg){
         exit(0);
     }
     printf("In uscita..\n");
-    //in modo da chiudere listener
-    pthread_kill(listener, SIGALRM);
+    esci = 1;
+    //invia segnali a listener per sbloccarlo da pcap loop
+    for (int i=0; i<NUMLISTTHR; i++)
+        pthread_kill(listener[i], SIGALRM);
+    pthread_kill(stat_thr, SIGALRM); //sveglia thread statistiche per un uscita rapida
     /* inviare qui un pacchetto falzo per essere sicuri di uscire */
     /* invia chiusura gop thread */
     send_close(&testa_gop, &coda_gop, &mtx_gop, &cond_gop, &freeRTP, setElRTP(NULL, -1, -1));
@@ -44,7 +56,13 @@ void* segnali(void *arg){
         pthread_cond_signal(&cond_dec);
     }
     pthread_mutex_unlock(&mtx_dec);
-    esci = 1;
+    return (void*) 0;
+}
+
+void* statThread(void* arg){
+    while (!esci) {
+        usleep(LFINESTRA);
+    }
     return (void*) 0;
 }
 
@@ -108,9 +126,8 @@ void* ReaderPacket(void* arg){
 
 void* GOPThread(void* arg){
     printf("Thread che crea GOP creato\n");
-    int chiudi = 0, count = 0, gop_count = 0, ret;
+    int num_thr = *(int*) arg, chiudi = 0, count = 0, gop_count = 0, ret;
     gop_info* info = setElGOP(gop_count, -1);
-    stat_t* statistiche = setStat();
     rtp* el = NULL;
     while (!chiudi) {
         pthread_mutex_lock(&mtx_gop);
@@ -119,7 +136,7 @@ void* GOPThread(void* arg){
         el = popList(&testa_gop, &coda_gop);
         pthread_mutex_unlock(&mtx_gop);
         if (el->packet) {
-            if((ret = workOnPacket(el, info)) == -1) //attualmente è copiato attravarso una alloc, potrei togliere la memcpy
+            if((ret = workOnPacket(el, info, num_thr)) == -1) //attualmente è copiato attravarso una alloc, potrei togliere la memcpy
                 freeRTP((void**)&el);
             else if (ret > 0){ //ret ha il numero di sequenza del nuovo pacchetto
                 pthread_mutex_lock(&mtx_ord);
@@ -136,7 +153,7 @@ void* GOPThread(void* arg){
         }
         count++;
     }
-    /* libera lista e invia segnale di chiusura a order */
+    /* manda l'ultimo GOP */ //probabilmente andrà tolto
     pthread_mutex_lock(&mtx_ord);
     pushList(&testa_ord, &coda_ord, info);
     pthread_cond_signal(&cond_ord);
@@ -147,7 +164,7 @@ void* GOPThread(void* arg){
 
 void* listenerThread(void* arg){
     //creazione thread che gestisce
-    int ret;
+    int ret, *num_thr = (int*) arg;
     /* registro l'handler per sigusr1*/
     struct sigaction new_action;
     new_action.sa_handler = termination_loopback;
@@ -156,14 +173,15 @@ void* listenerThread(void* arg){
     ERRORSYSHEANDLER(ret,sigaction(SIGALRM, &new_action, NULL),-1,"NO ALARM")
     /* */
     pthread_t gophandler;
-    SYSFREE(ret,pthread_create(&gophandler,NULL,&GOPThread,NULL),0,"thread")
-    pcap_loop(handle, -1, sniff, NULL);
+    SYSFREE(ret,pthread_create(&gophandler,NULL,&GOPThread,num_thr),0,"thread")
+    pcap_loop(handle[*num_thr], -1, sniff, NULL);
     printf("Thread in uscita\n");
     pthread_mutex_lock(&mtx_gop);
     pushList(&testa_gop, &coda_gop, setElRTP(NULL, -1,-1));
     pthread_cond_signal(&cond_gop);
     pthread_mutex_unlock(&mtx_gop);
     SYSFREE(ret,pthread_join(gophandler,NULL),0,"gop 1")
+    free(num_thr);
     return (void*)0;
 }
 

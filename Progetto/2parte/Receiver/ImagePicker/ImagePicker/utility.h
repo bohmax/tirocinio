@@ -38,15 +38,14 @@
 
 extern struct sockaddr_in servaddr; /* indirizzi per inoltrare i pacchetti udp*/
 extern int fd; /* file descriptor del socket */
-extern pthread_t listener, segnal; //thread listener e segnali
+extern pthread_t *listener, stat_thr,segnal; //thread listener, statistiche e segnali
 extern icl_hash_t* hash_packet;       /* hash table contentente i pacchetti da ordinare */
-extern pcap_t* handle;    /* packet capture handle */
+extern pcap_t** handle;    /* packet capture handles */
 extern pcap_t* loopback;    /* loopback interface */
 extern int from_loopback;   /* booleano, indica se loopback e handle coincidono */
 extern int datalink_loopback;   /* intero che indica il tipo del livello 2 del pacchetto */
 extern string payload;    /* contiene la codifica di un h264 */
 extern string metadata; //dovrà contenere SPS e PPS
-//extern gop gop_info;      /* contiene le informazioni di un gop */
 extern char* path_file;   /* path del file su cui viene salvato lo streaming*/
 extern char* path_image;   /* path su cui saranno salvate le immagini*/
 extern int esci;            /* indica l'uscita dal programma*/
@@ -65,5 +64,6 @@ extern list* coda_ord;
 extern list* testa_dec;
 extern list* coda_dec;  /* coda della lista sopra */
 extern sigset_t sigset_usr;
+extern stat_t* statistiche;
 
 #endif /* utility_h */

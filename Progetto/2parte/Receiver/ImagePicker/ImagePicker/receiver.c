@@ -103,34 +103,6 @@ int addPacketToGOP(u_char* rtpdata, int rtpdata_len, uint16_t seq_num, rtp* el, 
     return return_value;
 }
 
-void* insert_hash(uint16_t primarykey, void* insert){
-    uint16_t* key = setkeyHash(primarykey);
-    int buck = hash_packet->hash_function(key) % hash_packet->nbuckets;
-    int mtxi = buck / DIV;
-    pthread_mutex_lock(&mtxhash[mtxi]);
-    void* ris = icl_hash_insert(hash_packet, key, insert);
-    pthread_mutex_unlock(&mtxhash[mtxi]);
-    return ris;
-}
-
-void* find_hash(uint16_t* primarykey){
-    int buck = hash_packet->hash_function(primarykey) % hash_packet->nbuckets;
-    int mtxi = buck / DIV;
-    pthread_mutex_lock(&mtxhash[mtxi]);
-    void* ris = icl_hash_find(hash_packet, primarykey);
-    pthread_mutex_unlock(&mtxhash[mtxi]);
-    return ris;
-}
-
-int delete_hash(uint16_t* primarykey){
-    int buck = hash_packet->hash_function(primarykey) % hash_packet->nbuckets;
-    int mtxi = buck / DIV;
-    pthread_mutex_lock(&mtxhash[mtxi]);
-    int ris = icl_hash_delete(hash_packet, primarykey, &freeKeyHash, &freeElHash);
-    pthread_mutex_unlock(&mtxhash[mtxi]);
-    return ris;
-}
-
 void send_packet(rtp* el){
     struct udphdr* udp = NULL;
     if (!from_loopback) {
@@ -173,9 +145,10 @@ void send_packet(rtp* el){
     el->sent = 1;
 }
 
-int workOnPacket(rtp* el, gop_info* info){
+int workOnPacket(rtp* el, gop_info* info, int stat_index){
     int ris = 0;
     int fix = 0;
+    stat_t stat = statistiche[stat_index];
     if (from_loopback && datalink_loopback == DLT_NULL) {
         fix = (int) sizeof(struct ether_header) - 4;
     }
@@ -240,4 +213,33 @@ void save_GOP(uint16_t *from, gop_info* info){
     fwrite(payload.value, 1, payload.size, f);
     payload.size = 0;
     fclose(f);
+}
+
+/* funzioni di utilità per interagire con la tabella hash */
+void* insert_hash(uint16_t primarykey, void* insert){
+    uint16_t* key = setkeyHash(primarykey);
+    int buck = hash_packet->hash_function(key) % hash_packet->nbuckets;
+    int mtxi = buck / DIV;
+    pthread_mutex_lock(&mtxhash[mtxi]);
+    void* ris = icl_hash_insert(hash_packet, key, insert);
+    pthread_mutex_unlock(&mtxhash[mtxi]);
+    return ris;
+}
+
+void* find_hash(uint16_t* primarykey){
+    int buck = hash_packet->hash_function(primarykey) % hash_packet->nbuckets;
+    int mtxi = buck / DIV;
+    pthread_mutex_lock(&mtxhash[mtxi]);
+    void* ris = icl_hash_find(hash_packet, primarykey);
+    pthread_mutex_unlock(&mtxhash[mtxi]);
+    return ris;
+}
+
+int delete_hash(uint16_t* primarykey){
+    int buck = hash_packet->hash_function(primarykey) % hash_packet->nbuckets;
+    int mtxi = buck / DIV;
+    pthread_mutex_lock(&mtxhash[mtxi]);
+    int ris = icl_hash_delete(hash_packet, primarykey, &freeKeyHash, &freeElHash);
+    pthread_mutex_unlock(&mtxhash[mtxi]);
+    return ris;
 }

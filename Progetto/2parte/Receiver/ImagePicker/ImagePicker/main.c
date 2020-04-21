@@ -30,12 +30,21 @@ sigset_t sigset_usr; /* maschera globale dei segnali */
 pcap_t** handle;    /* packet capture handle */
 pcap_t* loopback;    /* loopback interface */
 pthread_t *listener, stat_thr, segnal; //thread listener, statistiche e segnali
+stat_t* statistiche; //statistiche dei thread listener
 int esci = 0;
 int from_loopback = 0;
 int datalink_loopback = 0;
 struct sockaddr_in servaddr;
-int fd;
-stat_t* statistiche; //statistiche dei thread listener
+int fd; //file descriptor del socket per inoltrare nuovamente i pacchetti
+FILE* pipe_plot;
+
+void set_pipe(){
+    pipe_plot = popen("python3 ~/PycharmProjects/plotting/plot.py", "w");
+    if (pipe_plot == NULL) {
+        printf("popen error\n");
+        exit(1);
+    }
+}
 
 void get_loopback(pcap_if_t* alldevs,char name[] ,char errbuf[]){
     pcap_if_t *d=alldevs;
@@ -137,6 +146,7 @@ int main(int argc, const char * argv[]) {
     path_file = (char*) argv[2];
     path_image = (char*) argv[3];
     if(pcap_findalldevs(&alldevs, errbuf)==-1) exit(EXIT_FAILURE);
+    set_pipe();
     set_socket();
     set_signal();
     inizialize_thread();
@@ -186,6 +196,9 @@ int main(int argc, const char * argv[]) {
     free(stringfilter);
     clock_t end = clock();
     close(fd);
+    //chiudi plot
+    fprintf(pipe_plot, "Esci\n");
+    fclose(pipe_plot);
     printf("Tempo di esecuzione %f\n", (double)(end - begin) / CLOCKS_PER_SEC);
     return 0;
 }

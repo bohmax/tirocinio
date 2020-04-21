@@ -5,7 +5,11 @@ ARFLAGS         =  rvs
 INCLUDES	= -I/usr/local/include
 LDFLAGS 	= -L/usr/local/lib
 OPTFLAGS	= #-O3 
-LIBS            = -pthread -lpcap -lavformat -lavcodec -lswscale -lavutil
+LIBS        = -pthread -lpcap -lavformat -lavcodec -lswscale -lavutil
+CHMOD       = chmod +x
+
+#inserire lo script che fa partire il client
+SCRIPT      = start.sh
 
 # aggiungere qui altri targets se necessario
 TARGETS		= client
@@ -22,6 +26,12 @@ OBJECTS		=	receiver.o \
 # aggiungere qui gli altri include 
 INCLUDE_FILES   = 	utility.h
 
+ifeq ($(shell uname),Darwin)
+	HEADER = libclient.a
+endif
+ifeq ($(shell uname),Linux)
+	HEADER = libclient.a $(INCLUDE_FILES)
+endif
 
 .PHONY: all client
 .SUFFIXES: .c .h
@@ -33,10 +43,10 @@ INCLUDE_FILES   = 	utility.h
 	$(CC) $(CFLAGS) $(INCLUDES) $(OPTFLAGS) -c -o $@ $<
 
 all		: $(TARGETS)
-		  chmod +x start.sh
+		  $(CHMOD) $(SCRIPT)
 
 
-client: main.o libclient.a
+client: main.o $(HEADER)
 	$(CC) $(CFLAGS) $(INCLUDES) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 libclient.a: $(OBJECTS)

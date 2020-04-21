@@ -36,6 +36,7 @@
 #include "lista.h"
 #include "icl_hash.h"
 
+extern FILE* pipe_plot; //pipe per communicare con il grafico delle statistiche
 extern struct sockaddr_in servaddr; /* indirizzi per inoltrare i pacchetti udp*/
 extern int fd; /* file descriptor del socket */
 extern pthread_t *listener, stat_thr,segnal; //thread listener, statistiche e segnali

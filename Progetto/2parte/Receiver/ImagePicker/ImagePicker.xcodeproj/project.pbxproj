@@ -39,6 +39,7 @@
 		0C05BD36243228C7006CE112 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
 		0C05BD3E243262B2006CE112 /* libpcap.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libpcap.tbd; path = usr/lib/libpcap.tbd; sourceTree = SDKROOT; };
 		0C05BD402432A1A9006CE112 /* packet_structs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = packet_structs.h; sourceTree = "<group>"; };
+		0C306EA2244E462200124B2D /* plot.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = plot.py; path = ../../plot.py; sourceTree = "<group>"; };
 		0C3540D224392EE300F28A77 /* lista.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = lista.h; sourceTree = "<group>"; };
 		0C3540D324392EE300F28A77 /* lista.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = lista.c; sourceTree = "<group>"; };
 		0C7465DA243425F8002E2B0D /* libavformat.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libavformat.a; path = ../../../../usr/local/Cellar/ffmpeg/4.2.2_2/lib/libavformat.a; sourceTree = "<group>"; };
@@ -98,6 +99,7 @@
 		0C05BD35243228C7006CE112 /* ImagePicker */ = {
 			isa = PBXGroup;
 			children = (
+				0C306EA2244E462200124B2D /* plot.py */,
 				0C05BD36243228C7006CE112 /* main.c */,
 				0CAFC8862432FAEF0039289A /* utility.h */,
 				0C95BAC624336A9F0096B4B6 /* define.h */,

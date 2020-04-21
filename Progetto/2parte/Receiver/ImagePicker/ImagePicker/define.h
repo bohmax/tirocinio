@@ -19,7 +19,7 @@
 #define HSIZE 2000 /* dimesione della tebella hash contentente i pacchetti. dimensione basata sul gop medio */
 #define DIV 50 //grandezza partizione della tebella hash
 #define NUMLISTTHR 1 /* numero di thread listener */
-#define NUMDECODERTHR 2 //numero di thread per decodificare le immagini
+#define NUMDECODERTHR 1 //numero di thread per decodificare le immagini
 #define MAC_LENGHT 6//lunghezza mac address
 #define MAC_ADDR    0x00 //mac address da settare su un pacchetto ethernet da inviare a loopback
 #define HOSTNAME "127.0.0.1" //host name su cui inoltrare i pacchetti rtp

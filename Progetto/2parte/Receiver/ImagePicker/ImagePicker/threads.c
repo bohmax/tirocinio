@@ -46,7 +46,7 @@ void* segnali(void *arg){
     pthread_kill(stat_thr, SIGALRM); //sveglia thread statistiche per un uscita rapida
     /* inviare qui un pacchetto falzo per essere sicuri di uscire */
     /* invia chiusura gop thread */
-    send_close(&testa_gop, &coda_gop, &mtx_gop, &cond_gop, &freeRTP, setElRTP(NULL, -1, -1));
+    send_close(&testa_gop, &coda_gop, &mtx_gop, &cond_gop, &freeRTP, setElRTP(NULL, -1, -1, -1));
     send_close(&testa_ord, &coda_ord, &mtx_ord, &cond_ord, &freeGOP, setElGOP(-1, -1));
     //svuota la lista di decodifica
     pthread_mutex_lock(&mtx_dec);
@@ -60,9 +60,67 @@ void* segnali(void *arg){
 }
 
 void* statThread(void* arg){
+    int i = 0, j = 0;
+    uint16_t tot, num_lost, num_buchi, max_actual; //per il calcolo di lunghezza, e utilità per out of order
+    int index[NUMLISTTHR]; //indice dei vari array delle stat
+    uint16_t copy_array[NUMLISTTHR][DIMARRSTAT];
+    uint16_t current[NUMLISTTHR]; //viene usato per calcolare out of ord
+    uint16_t perdita[NUMLISTTHR]; //tasso di perdita
+    uint16_t lunghezza[NUMLISTTHR]; //lunghezza media perdita
+    uint16_t delay[NUMLISTTHR]; //delay medio della finestra
+    uint16_t ordine[NUMLISTTHR]; //numero di pacchetti fuori ordine
+    int sockfd = set_stat_sock();
+    // function for chat
+    //func(sockfd);
     while (!esci) {
         usleep(LFINESTRA);
+        for (i = 0; i<NUMLISTTHR; i++) {
+            pthread_mutex_lock(&mtxstat[i]);
+            stat_t stat = statistiche[i];
+            memcpy(copy_array[i], stat.ids, stat.index);
+            index[i] = stat.index;
+            perdita[i] = stat.index - stat.max - stat.min;
+            delay[i] = stat.delay/stat.index;
+            current[i] = stat.min;
+            stat.id_accepted = stat.max;
+            stat.index = 0;
+            pthread_mutex_unlock(&mtxstat[i]);
+        }
+        //inizio vero calcolo stastiche
+        for (i = 0; i < NUMLISTTHR; i++) {
+            if(index[i] > 0){
+                //calcolo out of order
+                ordine[i] = 0;
+                max_actual = current[i];
+                for (j = 0; j < index[i]; j++) {
+                    if(current[i] == copy_array[i][j]){
+                        ordine[i]++;
+                        current[i] = max_actual;
+                    } else if (max_actual< copy_array[i][j])
+                        max_actual = copy_array[i][j];
+                }
+                //calcolo lunghezza
+                num_buchi = 0;
+                tot = 0;
+                qsort(copy_array[i], index[i], sizeof(uint16_t), cmpfunc);
+                for (j = 1; j < index[i]; j++) {
+                    num_lost = copy_array[i][j] - copy_array[i][j-1] - 1;
+                    if (num_lost > 0)
+                        num_buchi++;
+                    tot += num_lost;
+                }
+                lunghezza[i] = tot/num_buchi;
+            }
+            else {
+                perdita[i] = -1;
+                delay[i] = -1;
+                lunghezza[i] = -1;
+                ordine[i] = -1;
+            }
+        }
     }
+    // close the socket
+    close(sockfd);
     return (void*) 0;
 }
 
@@ -177,7 +235,7 @@ void* listenerThread(void* arg){
     pcap_loop(handle[*num_thr], -1, sniff, NULL);
     printf("Thread in uscita\n");
     pthread_mutex_lock(&mtx_gop);
-    pushList(&testa_gop, &coda_gop, setElRTP(NULL, -1,-1));
+    pushList(&testa_gop, &coda_gop, setElRTP(NULL, -1,-1, -1));
     pthread_cond_signal(&cond_gop);
     pthread_mutex_unlock(&mtx_gop);
     SYSFREE(ret,pthread_join(gophandler,NULL),0,"gop 1")
@@ -190,8 +248,8 @@ void sniff(u_char *useless, const struct pcap_pkthdr* pkthdr, const u_char* pack
     //setto gli elementi per poter passare i dati a un altro thread
     u_char* buf = malloc(sizeof(u_char)*pkthdr->len);
     memcpy(buf, packet, pkthdr->len);
-    rtp* el= setElRTP(buf, pkthdr->len, num_pkt);
-    //possibili miglioramenti eliminare le lock -> UN Produttore e un consumatore
+    //rtphdr* rtpHeader = (rtphdr*) (packet + 4 + sizeof(struct ip) + sizeof(struct udphdr));
+    rtp* el= setElRTP(buf, pkthdr->len, pkthdr->ts.tv_sec, num_pkt);
     pthread_mutex_lock(&mtx_gop);
     pushList(&testa_gop, &coda_gop, el);
     pthread_cond_signal(&cond_gop);

@@ -26,6 +26,7 @@ pthread_cond_t cond_dec = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t mtx_ord = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond_ord = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t mtxhash[HSIZE/DIV];
+pthread_mutex_t mtxstat[NUMLISTTHR];
 sigset_t sigset_usr; /* maschera globale dei segnali */
 pcap_t** handle;    /* packet capture handle */
 pcap_t* loopback;    /* loopback interface */
@@ -37,6 +38,7 @@ int datalink_loopback = 0;
 struct sockaddr_in servaddr;
 int fd; //file descriptor del socket per inoltrare nuovamente i pacchetti
 FILE* pipe_plot;
+long delay_calibrator[NUMLISTTHR];
 
 void set_pipe(){
     pipe_plot = popen("python3 ~/PycharmProjects/plotting/plot.py", "w");
@@ -103,10 +105,16 @@ void set_signal(){
     ERRORSYSHEANDLER(notused,pthread_sigmask(SIG_SETMASK, &sigset_usr, NULL),-1,"NO SIGMAS")
 }
 
-void inizialize_thread(){
+void inizialize_mtx(){
     int notused, size = HSIZE/DIV;
     for(int i=0; i < size; i++){
         if((notused=pthread_mutex_init(&mtxhash[i], NULL)<0)){
+            perror("impossibile inizializzare mutex");
+            exit(errno);
+        }
+    }
+    for(int i=0; i < NUMLISTTHR; i++){
+        if((notused=pthread_mutex_init(&mtxstat[i], NULL)<0)){
             perror("impossibile inizializzare mutex");
             exit(errno);
         }
@@ -146,10 +154,10 @@ int main(int argc, const char * argv[]) {
     path_file = (char*) argv[2];
     path_image = (char*) argv[3];
     if(pcap_findalldevs(&alldevs, errbuf)==-1) exit(EXIT_FAILURE);
-    set_pipe();
+    //set_pipe();
     set_socket();
     set_signal();
-    inizialize_thread();
+    inizialize_mtx();
     hash_packet = icl_hash_create(HSIZE, uint16_hash_function, uint_16t_key_compare);
     //avvio thread che gestisce i segnali
     SYSFREE(notused,pthread_create(&segnal,NULL,&segnali,NULL),0,"thread")
@@ -163,6 +171,7 @@ int main(int argc, const char * argv[]) {
         *id = i;
         sprintf(stringfilter, "not icmp and udp and dst port %d", (5000 + i));
         set_handler(dev_name, i, &fp, stringfilter, errbuf);
+        delay_calibrator[i] = -1;
         SYSFREE(notused,pthread_create(&listener[i],NULL,&listenerThread,id),0,"thread")
     }
     get_loopback(alldevs, dev_name, errbuf);
@@ -197,8 +206,8 @@ int main(int argc, const char * argv[]) {
     clock_t end = clock();
     close(fd);
     //chiudi plot
-    fprintf(pipe_plot, "Esci\n");
-    fclose(pipe_plot);
+    //fprintf(pipe_plot, "Esci\n");
+    //fclose(pipe_plot);
     printf("Tempo di esecuzione %f\n", (double)(end - begin) / CLOCKS_PER_SEC);
     return 0;
 }

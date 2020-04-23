@@ -82,7 +82,7 @@ int decode_to_png(AVFrame *pFrame, int FrameNo, int gop_num) {
             exit(1);
         }
         savePNG(packet, FrameNo, gop_num);
-        plot_value();
+        //plot_value();
         av_packet_unref(packet);
     }
     av_packet_free(&packet);

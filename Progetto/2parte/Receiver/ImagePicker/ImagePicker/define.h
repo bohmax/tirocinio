@@ -15,6 +15,7 @@
 #define DPORT 9998 /* destination port del lettore video */
 #define LFINESTRA 200 /* indica la lunghezza della finestra, cioè il tempo che deve trascorre per inviare le statistiche */
 #define DIM 500 //dimensione media per 2 di sps e pps
+#define DIMARRSTAT 128 //dimensione array statistiche
 #define GOPM 2000000 //dimensioni di un GOP medio moltiplicato per 2
 #define HSIZE 2000 /* dimesione della tebella hash contentente i pacchetti. dimensione basata sul gop medio */
 #define DIV 50 //grandezza partizione della tebella hash

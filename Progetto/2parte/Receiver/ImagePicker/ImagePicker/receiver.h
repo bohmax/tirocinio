@@ -17,6 +17,9 @@ void starter(string* stringa);
 //concatena dst con src a partire da dst_len e concatena la src fino a src_len
 void add(string* dst, u_char src[], int src_len);
 
+//calcola la statistica
+void stat_calc(rtp* el, stat_t* stat, int index, uint16_t rtp_id, uint32_t timestamp);
+
 //Crea l'header per tutti i pacchetti dello streaming
 void create_header_information(u_char* rtpdata, unsigned int fragment_type, int rtpdata_len);
 

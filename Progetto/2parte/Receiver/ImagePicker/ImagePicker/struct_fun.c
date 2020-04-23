@@ -30,11 +30,12 @@ gop_info* setElGOP(int gop_num, int start){
     return new;
 }
 
-rtp* setElRTP(u_char* buf, int size, int npkt){
+rtp* setElRTP(u_char* buf, int size, long timestamp, int npkt){
     rtp* new = malloc(sizeof(rtp));
     memset(new, '\0', sizeof(rtp));
     new->packet = buf;
     new->size = size;
+    new->r_timestamp = timestamp;
     new->n_pkt = npkt;
     new->nal_type = 0;
     new->state = 0;

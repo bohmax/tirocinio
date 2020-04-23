@@ -58,6 +58,7 @@ extern pthread_cond_t cond_ord;  /* variabile di condizione per ordinare i pacch
 extern pthread_mutex_t mtx_dec;  /* mutex per fare produttore consumatore con il decodificatore */
 extern pthread_cond_t cond_dec;  /* variabile di condizione per produttore consumatore*/
 extern pthread_mutex_t mtxhash[HSIZE/DIV]; /* mutex della tabella hash*/
+extern pthread_mutex_t mtxstat[NUMLISTTHR];
 extern list* testa_gop;
 extern list* coda_gop;  /* coda della lista sopra */
 extern list* testa_ord; /* lista dei pacchetti */
@@ -66,5 +67,6 @@ extern list* testa_dec;
 extern list* coda_dec;  /* coda della lista sopra */
 extern sigset_t sigset_usr;
 extern stat_t* statistiche;
+extern long delay_calibrator[NUMLISTTHR]; // calcola il delay del primo pacchetto
 
 #endif /* utility_h */

@@ -40,6 +40,20 @@ void add(string* dst, u_char src[], int src_len){
     dst->size += src_len;
 }
 
+void stat_calc(rtp* el, stat_t* stat, int index, uint16_t rtp_id, uint32_t timestamp){
+    if (delay_calibrator[index] == -1)
+        delay_calibrator[index] = timestamp - el->r_timestamp; // calibra il delay dei pacchetti
+    if (rtp_id > stat->id_accepted) {
+        stat->ids[stat->index]=rtp_id;
+        stat->index++;
+        stat->delay += (el->r_timestamp - timestamp + delay_calibrator[index]); // memorizzo il delay, e poi lo dividerò quando vado a calcolare il delay
+        if (stat->max < rtp_id)
+            stat->max = rtp_id;
+        if (stat->min > rtp_id)
+            stat->min = rtp_id;
+    }
+}
+
 void create_header_information(u_char* rtpdata, unsigned int fragment_type, int rtpdata_len){
     if(fragment_type == 7){
         starter(&metadata);
@@ -81,21 +95,7 @@ int addPacketToGOP(u_char* rtpdata, int rtpdata_len, uint16_t seq_num, rtp* el, 
         unsigned int nal = idr_nal | nal_type;  // [ 3 NAL UNIT BITS | 5 FRAGMENT TYPE BITS] 8 bits
         el->decoder = nal;
     }
-    //else if (end_bit == 64)
-    //    if (nal_type == 5) { // potrebbe essere necessario controllare che end_gop sia minore del nuovo seq num
-            //end_new_gop = seq_num;
-    //        info->end_seq = seq_num;
-    //    }
-        info->num_frame++;  // solo per dati statistici
-    //if (nal_type == 5) // mi assicuro di non aver già fatto la richiesta per il gop precedente al thread unificatore, potrei dover fare un else per aggiornare end gop nel caso non si sia ricevuto end_gop
-    //    if (seq_num > start_gop && seq_num < end_new_gop) { //mi assicuro che sia nel range del gop da accettare, end_gop potrebbe non essere ancora aggiornato. verificare domani
-           /*
-            manda un pacchetto al thread per riassemblare i pacchetti del gop precedente
-            */
-            //printf("Hei");
-        //}
-    //if (current_seq < seq_num) //aggiorna current seq
-    //    current_seq = seq_num;
+    info->num_frame++;  // solo per dati statistici
     if(!insert_hash(seq_num, el)) //elemento già inserito ritorna
         return -1;
     if (return_value == 0)
@@ -155,7 +155,12 @@ int workOnPacket(rtp* el, gop_info* info, int stat_index){
     int rtpdata_len = el->size - to_rtpdata + fix;
     rtphdr* rtpHeader = (rtphdr*)(el->packet + to_rtphdr - fix);
     uint16_t seq = ntohs(rtpHeader->seq_num);
+    //modifica statistiche
+    pthread_mutex_lock(&mtxstat[stat_index]);
+    stat_calc(el, &stat, stat_index, seq, ntohl(rtpHeader->TS));
+    pthread_mutex_unlock(&mtxstat[stat_index]);
     //printf("RTP number [%d], timestamp of this packet is: %d\n", ntohs(rtpHeader->seq_num), ntohl(rtpHeader->TS)); //function converts the unsigned short integer netshort from network byte order to host byte order.
+    
     u_char* rtpdata = (u_char*) (el->packet + to_rtpdata - fix);
     //FU - A - -HEADER
     //unsigned int forbidden = rtpdata[0] & 0x80 >> 7;

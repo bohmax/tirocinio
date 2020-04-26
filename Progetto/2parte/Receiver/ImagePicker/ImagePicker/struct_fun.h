@@ -13,11 +13,8 @@
 
 uint16_t* setkeyHash(uint16_t key);
 
-//inizializza le statistiche
-stat_t* setStat(void);
-
 /* funzioni per inizializzare e liberare elementi che verrano inseriti nella lista*/
-rtp* setElRTP(u_char* buf, int size, long timestamp, int npkt);
+rtp* setElRTP(u_char* buf, int size, int npkt);
 
 void freeRTP(void** el); //list è un elemento occhio al nome
 
@@ -30,7 +27,5 @@ void freeORD(void** el);
 void freeKeyHash(void* el);
 
 void freeElHash(void* el);
-
-void freeStat(void** el);
 
 #endif /* struct_fun_h */

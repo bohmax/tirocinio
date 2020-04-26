@@ -8,19 +8,6 @@
 
 #include "threads.h"
 
-/* funzione handler dei segnali che vengono inviati al thread listener per chiudere*/
-void termination_loopback(int signum){
-    int volatile i = 0, trovato = 0;
-    pthread_t self = pthread_self();
-    while(i<NUMLISTTHR && !trovato){
-        if (self == listener[i]) {
-            pcap_breakloop(handle[i]);
-            trovato = 1;
-        }
-        i++;
-    }
-}
-
 //manda la chiusura su una lista
 void send_close(list** testa, list** coda, pthread_mutex_t* mtx, pthread_cond_t* cond, void(* del)(void** el), void* el){
     pthread_mutex_lock(mtx);
@@ -39,14 +26,10 @@ void* segnali(void *arg){
         exit(0);
     }
     printf("In uscita..\n");
-    esci = 1;
-    //invia segnali a listener per sbloccarlo da pcap loop
-    for (int i=0; i<NUMLISTTHR; i++)
-        pthread_kill(listener[i], SIGALRM);
-    pthread_kill(stat_thr, SIGALRM); //sveglia thread statistiche per un uscita rapida
-    /* inviare qui un pacchetto falzo per essere sicuri di uscire */
+    //per qualsiasi segnare registrato termina pcap_loop
+    pcap_breakloop(handle);
     /* invia chiusura gop thread */
-    send_close(&testa_gop, &coda_gop, &mtx_gop, &cond_gop, &freeRTP, setElRTP(NULL, -1, -1, -1));
+    send_close(&testa_gop, &coda_gop, &mtx_gop, &cond_gop, &freeRTP, setElRTP(NULL, -1, -1));
     send_close(&testa_ord, &coda_ord, &mtx_ord, &cond_ord, &freeGOP, setElGOP(-1, -1));
     //svuota la lista di decodifica
     pthread_mutex_lock(&mtx_dec);
@@ -56,71 +39,7 @@ void* segnali(void *arg){
         pthread_cond_signal(&cond_dec);
     }
     pthread_mutex_unlock(&mtx_dec);
-    return (void*) 0;
-}
-
-void* statThread(void* arg){
-    int i = 0, j = 0;
-    uint16_t tot, num_lost, num_buchi, max_actual; //per il calcolo di lunghezza, e utilità per out of order
-    int index[NUMLISTTHR]; //indice dei vari array delle stat
-    uint16_t copy_array[NUMLISTTHR][DIMARRSTAT];
-    uint16_t current[NUMLISTTHR]; //viene usato per calcolare out of ord
-    uint16_t perdita[NUMLISTTHR]; //tasso di perdita
-    uint16_t lunghezza[NUMLISTTHR]; //lunghezza media perdita
-    uint16_t delay[NUMLISTTHR]; //delay medio della finestra
-    uint16_t ordine[NUMLISTTHR]; //numero di pacchetti fuori ordine
-    int sockfd = set_stat_sock();
-    // function for chat
-    //func(sockfd);
-    while (!esci) {
-        usleep(LFINESTRA);
-        for (i = 0; i<NUMLISTTHR; i++) {
-            pthread_mutex_lock(&mtxstat[i]);
-            stat_t stat = statistiche[i];
-            memcpy(copy_array[i], stat.ids, stat.index);
-            index[i] = stat.index;
-            perdita[i] = stat.index - stat.max - stat.min;
-            delay[i] = stat.delay/stat.index;
-            current[i] = stat.min;
-            stat.id_accepted = stat.max;
-            stat.index = 0;
-            pthread_mutex_unlock(&mtxstat[i]);
-        }
-        //inizio vero calcolo stastiche
-        for (i = 0; i < NUMLISTTHR; i++) {
-            if(index[i] > 0){
-                //calcolo out of order
-                ordine[i] = 0;
-                max_actual = current[i];
-                for (j = 0; j < index[i]; j++) {
-                    if(current[i] == copy_array[i][j]){
-                        ordine[i]++;
-                        current[i] = max_actual;
-                    } else if (max_actual< copy_array[i][j])
-                        max_actual = copy_array[i][j];
-                }
-                //calcolo lunghezza
-                num_buchi = 0;
-                tot = 0;
-                qsort(copy_array[i], index[i], sizeof(uint16_t), cmpfunc);
-                for (j = 1; j < index[i]; j++) {
-                    num_lost = copy_array[i][j] - copy_array[i][j-1] - 1;
-                    if (num_lost > 0)
-                        num_buchi++;
-                    tot += num_lost;
-                }
-                lunghezza[i] = tot/num_buchi;
-            }
-            else {
-                perdita[i] = -1;
-                delay[i] = -1;
-                lunghezza[i] = -1;
-                ordine[i] = -1;
-            }
-        }
-    }
-    // close the socket
-    close(sockfd);
+    esci = 1;
     return (void*) 0;
 }
 
@@ -147,7 +66,7 @@ void* ReaderPacket(void* arg){
     printf("Thread per salvare un GOP\n");
     int esci = 0, ret;
     gop_info* el = NULL;
-    uint16_t* from = malloc(sizeof(uint16_t));
+    int* from = malloc(sizeof(int));
     pthread_t decodehandler[NUMDECODERTHR];
     for (int i = 0; i < NUMDECODERTHR; i++)
         SYSFREE(ret,pthread_create(&decodehandler[i],NULL,&DecoderThread,NULL),0,"thread")
@@ -184,7 +103,7 @@ void* ReaderPacket(void* arg){
 
 void* GOPThread(void* arg){
     printf("Thread che crea GOP creato\n");
-    int num_thr = *(int*) arg, chiudi = 0, count = 0, gop_count = 0, ret;
+    int chiudi = 0, count = 0, gop_count = 0, ret;
     gop_info* info = setElGOP(gop_count, -1);
     rtp* el = NULL;
     while (!chiudi) {
@@ -194,7 +113,7 @@ void* GOPThread(void* arg){
         el = popList(&testa_gop, &coda_gop);
         pthread_mutex_unlock(&mtx_gop);
         if (el->packet) {
-            if((ret = workOnPacket(el, info, num_thr)) == -1) //attualmente è copiato attravarso una alloc, potrei togliere la memcpy
+            if((ret = workOnPacket(el, info)) == -1) //attualmente è copiato attravarso una alloc, potrei togliere la memcpy
                 freeRTP((void**)&el);
             else if (ret > 0){ //ret ha il numero di sequenza del nuovo pacchetto
                 pthread_mutex_lock(&mtx_ord);
@@ -211,9 +130,10 @@ void* GOPThread(void* arg){
         }
         count++;
     }
-    /* manda l'ultimo GOP */ //probabilmente andrà tolto
+    /* libera lista e invia segnale di chiusura a order */
     pthread_mutex_lock(&mtx_ord);
     pushList(&testa_ord, &coda_ord, info);
+    pushList(&testa_ord, &coda_ord, setElGOP(-1, -1));
     pthread_cond_signal(&cond_ord);
     pthread_mutex_unlock(&mtx_ord);
     printf("Thread che crea GOP esce\n");
@@ -222,34 +142,29 @@ void* GOPThread(void* arg){
 
 void* listenerThread(void* arg){
     //creazione thread che gestisce
-    int ret, *num_thr = (int*) arg;
-    /* registro l'handler per sigusr1*/
-    struct sigaction new_action;
-    new_action.sa_handler = termination_loopback;
-    new_action.sa_flags = 0;
-    ERRORSYSHEANDLER(ret,sigemptyset(&new_action.sa_mask),-1,"NO SIGEMPY LIST")
-    ERRORSYSHEANDLER(ret,sigaction(SIGALRM, &new_action, NULL),-1,"NO ALARM")
-    /* */
+    int ret;
     pthread_t gophandler;
-    SYSFREE(ret,pthread_create(&gophandler,NULL,&GOPThread,num_thr),0,"thread")
-    pcap_loop(handle[*num_thr], -1, sniff, NULL);
+    SYSFREE(ret,pthread_create(&gophandler,NULL,&GOPThread,NULL),0,"thread")
+    pcap_loop(handle, -1, sniff, NULL);
     printf("Thread in uscita\n");
     pthread_mutex_lock(&mtx_gop);
-    pushList(&testa_gop, &coda_gop, setElRTP(NULL, -1,-1, -1));
+    pushList(&testa_gop, &coda_gop, setElRTP(NULL, -1,-1));
     pthread_cond_signal(&cond_gop);
     pthread_mutex_unlock(&mtx_gop);
     SYSFREE(ret,pthread_join(gophandler,NULL),0,"gop 1")
-    free(num_thr);
     return (void*)0;
 }
 
-void sniff(u_char *useless, const struct pcap_pkthdr* pkthdr, const u_char* packet){
+void sniff(u_char *useless, const struct pcap_pkthdr* pkthdr, const u_char*
+              packet){
     num_pkt += 1;
+    int to_udp = (sizeof(struct ether_header) + sizeof(struct ip));
+    int udplen = pkthdr->len - to_udp;
     //setto gli elementi per poter passare i dati a un altro thread
-    u_char* buf = malloc(sizeof(u_char)*pkthdr->len);
-    memcpy(buf, packet, pkthdr->len);
-    //rtphdr* rtpHeader = (rtphdr*) (packet + 4 + sizeof(struct ip) + sizeof(struct udphdr));
-    rtp* el= setElRTP(buf, pkthdr->len, pkthdr->ts.tv_sec, num_pkt);
+    u_char* buf = malloc(sizeof(u_char)*udplen);
+    memcpy(buf, packet+to_udp, udplen);
+    rtp* el= setElRTP(buf, udplen, num_pkt);
+    //possibili miglioramenti eliminare le lock -> UN Produttore e un consumatore
     pthread_mutex_lock(&mtx_gop);
     pushList(&testa_gop, &coda_gop, el);
     pthread_cond_signal(&cond_gop);

@@ -16,7 +16,8 @@ TARGETS		= client
 
 
 # aggiungere qui i file oggetto da compilare
-OBJECTS		=	receiver.o \
+OBJECTS		=	utility.o \
+				receiver.o \
 				icl_hash.o  \
 				h264toPng.o \
 				lista.o \

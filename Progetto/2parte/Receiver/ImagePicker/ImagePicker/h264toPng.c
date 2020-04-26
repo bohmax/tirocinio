@@ -20,14 +20,6 @@ void logging(const char *fmt, ...){
     fprintf( stderr, "\n" );
 }
 
-void plot_value(){
-    int quality = 1;
-    static int frame = -1;
-    frame++;
-    fprintf(pipe_plot, "%d %d\n", quality, frame);
-    fflush(pipe_plot);
-}
-
 void savePNG(AVPacket* packet, int FrameNo, int gop_num){
     FILE *PNGFile;
     char PNGName[128];
@@ -82,7 +74,6 @@ int decode_to_png(AVFrame *pFrame, int FrameNo, int gop_num) {
             exit(1);
         }
         savePNG(packet, FrameNo, gop_num);
-        //plot_value();
         av_packet_unref(packet);
     }
     av_packet_free(&packet);

@@ -52,14 +52,31 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "lo0 /Users/maxuel/Desktop/gopfolder_r/gop /Users/maxuel/Desktop/imgfolder_r/frame"
-            isEnabled = "YES">
+            argument = "en0"
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = " /Users/maxuel/Desktop/cnr2.pcap /Users/maxuel/Desktop/gopfolder_r/gop /Users/maxuel/Desktop/imgfolder_r/frame"
-            isEnabled = "NO">
+            isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>
+      <AdditionalOptions>
+         <AdditionalOption
+            key = "MallocStackLogging"
+            value = ""
+            isEnabled = "YES">
+         </AdditionalOption>
+         <AdditionalOption
+            key = "PrefersMallocStackLoggingLite"
+            value = ""
+            isEnabled = "YES">
+         </AdditionalOption>
+         <AdditionalOption
+            key = "MallocScribble"
+            value = ""
+            isEnabled = "YES">
+         </AdditionalOption>
+      </AdditionalOptions>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"

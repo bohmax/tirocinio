@@ -13,9 +13,6 @@
 
 void logging(const char *fmt, ...);
 
-//calcola PSNR e plotta il risultato
-void plot_value(void);
-
 //salva un png in un file
 void savePNG(AVPacket* packet, int FrameNo, int gop_num);
 

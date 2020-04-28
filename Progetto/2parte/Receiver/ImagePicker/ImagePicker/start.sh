@@ -2,9 +2,12 @@
 helper="NAME
 	Stream - Permette la visualizzazione di più stream rtp in un unico video
 SYNOPSIS
-	helper INTERFACE GOP_FOLDER IMG_FOLDER
+	helper INTERFACE HOW_MANY_CHANNEL SRC_PORT DST_PORT GOP_FOLDER IMG_FOLDER
 DESCRIPTION
 	INTERFACE è l'interfaccia da cui sniffare i pacchetti
+	HOW_MANY_CHANNEL il numero di canali
+	SRC_PORT il primo numero di porta da cui sniffare i pacchetti
+	DST_PORT porta di destinazione del video e porta per inviare le statistiche
 	GOP_FOLDER è la cartella in cui verranno salvati i GOP
 	IMG_FOLDER è la cartella in cui verranmno salvate le immagini dei GOP.
 AUTHOR
@@ -28,7 +31,7 @@ do
 done
 
 GSTREAM_LOC='gst-launch-1.0 '
-PIPELINE='-v udpsrc port=9998 caps = "application/x-rtp, media=(string)video, clock-rate=(int)90000, encoding-name=(string)H264, payload=(int)96" ! rtpjitterbuffer ! rtph264depay ! decodebin ! videoconvert ! '
+PIPELINE='-v udpsrc port='"$4"' caps = "application/x-rtp, media=(string)video, clock-rate=(int)90000, encoding-name=(string)H264, payload=(int)96" ! rtpjitterbuffer ! rtph264depay ! decodebin ! videoconvert ! '
 SCREEN='xvimagesink'
 if [[ "$OSTYPE" == "darwin"* ]]; then
 	GSTREAM_LOC='/Library/Frameworks/GStreamer.framework/Commands/gst-launch-1.0 '

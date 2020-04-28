@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		0C05BD37243228C7006CE112 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 0C05BD36243228C7006CE112 /* main.c */; };
 		0C05BD3F243262B2006CE112 /* libpcap.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 0C05BD3E243262B2006CE112 /* libpcap.tbd */; };
+		0C0972D42451CB6200BEF53F /* utility.c in Sources */ = {isa = PBXBuildFile; fileRef = 0C0972D32451CB6200BEF53F /* utility.c */; };
 		0C3540D424392EE300F28A77 /* lista.c in Sources */ = {isa = PBXBuildFile; fileRef = 0C3540D324392EE300F28A77 /* lista.c */; };
 		0CAFC8882432FB7A0039289A /* receiver.c in Sources */ = {isa = PBXBuildFile; fileRef = 0CAFC8872432FB7A0039289A /* receiver.c */; };
 		0CD6DDA4243426B100C6FCC6 /* libavcodec.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0C7465DB243425F8002E2B0D /* libavcodec.a */; };
@@ -38,7 +39,8 @@
 		0C05BD33243228C7006CE112 /* ImagePicker */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ImagePicker; sourceTree = BUILT_PRODUCTS_DIR; };
 		0C05BD36243228C7006CE112 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
 		0C05BD3E243262B2006CE112 /* libpcap.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libpcap.tbd; path = usr/lib/libpcap.tbd; sourceTree = SDKROOT; };
-		0C05BD402432A1A9006CE112 /* rtp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = rtp.h; sourceTree = "<group>"; };
+		0C05BD402432A1A9006CE112 /* packet_structs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = packet_structs.h; sourceTree = "<group>"; };
+		0C0972D32451CB6200BEF53F /* utility.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = utility.c; sourceTree = "<group>"; };
 		0C3540D224392EE300F28A77 /* lista.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = lista.h; sourceTree = "<group>"; };
 		0C3540D324392EE300F28A77 /* lista.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = lista.c; sourceTree = "<group>"; };
 		0C7465DA243425F8002E2B0D /* libavformat.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libavformat.a; path = ../../../../usr/local/Cellar/ffmpeg/4.2.2_2/lib/libavformat.a; sourceTree = "<group>"; };
@@ -100,8 +102,9 @@
 			children = (
 				0C05BD36243228C7006CE112 /* main.c */,
 				0CAFC8862432FAEF0039289A /* utility.h */,
+				0C0972D32451CB6200BEF53F /* utility.c */,
 				0C95BAC624336A9F0096B4B6 /* define.h */,
-				0C05BD402432A1A9006CE112 /* rtp.h */,
+				0C05BD402432A1A9006CE112 /* packet_structs.h */,
 				0CAFC8892432FDC30039289A /* struct.h */,
 				0CF68DAE243E5A5B00DF95C5 /* struct_fun.h */,
 				0CF68DA9243E49E400DF95C5 /* struct_fun.c */,
@@ -195,6 +198,7 @@
 				0CF68DAD243E521B00DF95C5 /* threads.c in Sources */,
 				0CAFC8882432FB7A0039289A /* receiver.c in Sources */,
 				0CD6DDAB2437ADAD00C6FCC6 /* h264toPng.c in Sources */,
+				0C0972D42451CB6200BEF53F /* utility.c in Sources */,
 				0CF68DA8243DFB2300DF95C5 /* icl_hash.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

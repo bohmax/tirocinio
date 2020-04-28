@@ -14,6 +14,12 @@ uint16_t* setkeyHash(uint16_t key){
     return num;
 }
 
+stat_t* setStat(){
+    stat_t* new = malloc(sizeof(stat_t));
+    memset(new, 0, sizeof(stat_t));
+    return new;
+}
+
 gop_info* setElGOP(int gop_num, int start){
     gop_info* new = malloc(sizeof(gop_info));
     memset(new, '\0', sizeof(gop_info));
@@ -24,15 +30,17 @@ gop_info* setElGOP(int gop_num, int start){
     return new;
 }
 
-rtp* setElRTP(u_char* buf, int size, int npkt){
+rtp* setElRTP(u_char* buf, int size, long timestamp, int npkt){
     rtp* new = malloc(sizeof(rtp));
     memset(new, '\0', sizeof(rtp));
     new->packet = buf;
     new->size = size;
+    new->r_timestamp = timestamp;
     new->n_pkt = npkt;
     new->nal_type = 0;
     new->state = 0;
     new->decoder = 0;
+    new->sent = 0;
     return new;
 }
 
@@ -54,6 +62,12 @@ void freeRTP(void** el){
     free(todestroy->packet);
     free(todestroy);
     todestroy = NULL;
+}
+
+void freeStat(void** el){
+    stat_t* stat = (stat_t*) (*el);
+    free(stat);
+    stat = NULL;
 }
 
 void freeKeyHash(void* el){

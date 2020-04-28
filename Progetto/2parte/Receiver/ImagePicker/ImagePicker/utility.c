@@ -83,9 +83,9 @@ void send_to_server(int sockfd, send_stat spedisci[]){
 
 // algoritmo preso da https://it.mathworks.com/matlabcentral/fileexchange/37691-psnr-for-rgb-images
 //src e dst sono le immagini da confrontare, w e h sono dimensioni delle due immagini che devono coincidere(non viene controllato)
-float calculate_PSNR(u_char* src, u_char* dst, int w, int h){
-    return (float)(10.0*log10( pow(255,2) / calculate_MSE(src, dst, w, h))); //255 è per le immagini 8 bit
-}
+//float calculate_PSNR(u_char* src, u_char* dst, int w, int h){
+//    return (float)(10.0*log10( pow(255,2) / calculate_MSE(src, dst, w, h))); //255 è per le immagini 8 bit
+//}
 
 /*float calculate_MSE(u_char* src, u_char* dst, int w, int h){
     float mseR = sum(sum(mseRImage)) / (rows * columns);

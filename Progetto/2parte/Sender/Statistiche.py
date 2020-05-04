@@ -1,9 +1,7 @@
 import socket
-from _queue import Empty
 from ctypes import *
 
 HOST = '127.0.0.1'
-PORT = 9998
 
 
 class Stat(Structure):  # Struttura che deve essere identica alla struttura send_stat definita in struct.h
@@ -16,10 +14,11 @@ class Stat(Structure):  # Struttura che deve essere identica alla struttura send
 def stat(args):
     queue = args[0]
     num_lst = args[1]  # per sapere il numero di sender
-    esci = args[2]
+    port = args[2]
+    esci = False
     dim = sizeof(Stat)
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind((HOST, PORT))
+        s.bind((HOST, port))
         s.listen()
         conn, addr = s.accept()
         with conn:

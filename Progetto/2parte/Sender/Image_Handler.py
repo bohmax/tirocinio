@@ -1,13 +1,17 @@
+from _queue import Empty
 from multiprocessing import Process
 from scapy.all import *
-from scapy.layers.inet import UDP
+from scapy.layers.inet import UDP, IP
 from scapy.layers.rtp import RTP
+
+to_null = "&> /dev/null"
 
 
 def starter(to_add):
     zero = (0).to_bytes(1, byteorder=sys.byteorder)
     uno = (1).to_bytes(1, byteorder=sys.byteorder)
     to_add += zero + zero + uno
+
 
 def to_image(args):
     gop_path = args[0]
@@ -17,9 +21,10 @@ def to_image(args):
 
 def analyzer(args):
     queue = args[0]
-    path_gop = args[1]
-    path_img = args[2]
-    esci = False
+    pcap_path = args[1]
+    port = args[2]
+    path_gop = args[3]
+    path_img = args[4]
     num_frame = 0
     num_gop = 0
     payload = bytearray()
@@ -39,64 +44,66 @@ def analyzer(args):
     inserisco poi il payload togliendo i primi due byte(contengono gli header)
     se incontro poi altri sps e pps li scarto(per lo stream in analisi sono sempre uguali)
     '''
-    while not esci:
-        # https://stackoverflow.com/questions/7665217/how-to-process-raw-udp-packets-so-that-they-can-be-decoded-by-a-decoder-filter-i
-        #prendo H264 FRAGMENT
-        try:
-            pkt = queue.get()
-        except KeyboardInterrupt:
-            esci = True
-            continue
-        if pkt is None:
-            esci = True
-            continue
-        pkt[UDP].payload = RTP(pkt[Raw].load)
-        data = pkt[RTP].load
+    try:
+        for pkt in PcapReader(pcap_path):
+            try:
+                val = queue.get(block=False)
+            except Empty:
+                pass
+            else:
+                if val == 'Esci':
+                    break
+            if IP in pkt and UDP in pkt and pkt[UDP].dport == port:
+                # https://stackoverflow.com/questions/7665217/how-to-process-raw-udp-packets-so-that-they-can-be-decoded-by-a-decoder-filter-i
+                #prendo H264 FRAGMENT
+                pkt[UDP].payload = RTP(pkt[Raw].load)
+                data = pkt[RTP].load
 
-        #FU - A - -HEADER
-        forbidden = data[0] & 0x80 >> 7
-        nri = data[0] & 0x60 >> 5
-        fragment_type = data[0] & 0x1F  # spero che il valore sia 28
+                #FU - A - -HEADER
+                forbidden = data[0] & 0x80 >> 7
+                nri = data[0] & 0x60 >> 5
+                fragment_type = data[0] & 0x1F  # spero che il valore sia 28
 
-        if not inizialized:
-            if fragment_type == 7:
-                starter(metadata)
-                metadata += pkt[Raw].load  # SPS informaition
-            if fragment_type == 8:
-                starter(metadata)
-                metadata += pkt[Raw].load  # PPS information
-                inizialized = True
-            continue
+                if not inizialized:
+                    if fragment_type == 7:
+                        starter(metadata)
+                        metadata += pkt[Raw].load  # SPS informaition
+                    if fragment_type == 8:
+                        starter(metadata)
+                        metadata += pkt[Raw].load  # PPS information
+                        inizialized = True
+                    continue
 
-        #informazioni per lo streaming ottenuto, inizio concatenazione
-        if fragment_type == 28:
-            #Nal header
-            start_bit = data[1] & 0x80  # 128 se e' il primo pacchetto del frame 0 altrimenti
-            end_bit = data[1] & 0x40  # 64 se e' l ultimo pacchetto 0 altrimenti
-            reserved = data[1] & 0x20 >> 5
-            nal_type = data[1] & 0x1F
+                #informazioni per lo streaming ottenuto, inizio concatenazione
+                if fragment_type == 28:
+                    #Nal header
+                    start_bit = data[1] & 0x80  # 128 se e' il primo pacchetto del frame 0 altrimenti
+                    end_bit = data[1] & 0x40  # 64 se e' l ultimo pacchetto 0 altrimenti
+                    reserved = data[1] & 0x20 >> 5
+                    nal_type = data[1] & 0x1F
 
-            if start_bit == 128:
-                if nal_type == 5:
-                    if len(payload) != 0:
-                        path = path_gop + '-' + str(num_gop).zfill(6)
-                        img_path = path_img + "-" + str(num_gop).zfill(6) + "-%06d.png"
-                        f = open(path, "wb")
-                        f.write(payload)
-                        f.close()
-                        num_gop += 1
-                        payload = bytearray()
-                        Process(target=to_image, args=((path, img_path),)).start()
-                    print('start new gop ' + str(num_gop))
-                    payload += metadata
-                idr_nal = data[0] & 0xE0  # 3 NAL UNIT BITS
-                nal = idr_nal | nal_type  # [ 3 NAL UNIT BITS | 5 FRAGMENT TYPE BITS] 8 bits
-                starter(payload)
-                payload += nal.to_bytes(1, byteorder=sys.byteorder)  # header per il frame
-            elif end_bit == 64:
-                num_frame += 1  # solo per dati statistici
-            payload += data[2:]  # rimuove gli header del payload e contiene solo i dati successivi
-
+                    if start_bit == 128:
+                        if nal_type == 5:
+                            if len(payload) != 0:
+                                path = path_gop + '-' + str(num_gop).zfill(6)
+                                img_path = path_img + "-" + str(num_gop).zfill(6) + "-%06d.png"
+                                f = open(path, "wb")
+                                f.write(payload)
+                                f.close()
+                                num_gop += 1
+                                payload = bytearray()
+                                Process(target=to_image, args=((path, img_path),)).start()
+                            print('start new gop ' + str(num_gop))
+                            payload += metadata
+                        idr_nal = data[0] & 0xE0  # 3 NAL UNIT BITS
+                        nal = idr_nal | nal_type  # [ 3 NAL UNIT BITS | 5 FRAGMENT TYPE BITS] 8 bits
+                        starter(payload)
+                        payload += nal.to_bytes(1, byteorder=sys.byteorder)  # header per il frame
+                    elif end_bit == 64:
+                        num_frame += 1  # solo per dati statistici
+                    payload += data[2:]  # rimuove gli header del payload e contiene solo i dati successivi
+    except KeyboardInterrupt:
+        pass
 
     '''
     cap = cv2.VideoCapture(path)

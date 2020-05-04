@@ -1,8 +1,9 @@
 import fileinput
 import time
-from threading import Thread
 import matplotlib
+import cv2
 import matplotlib.pyplot as plt
+from threading import Thread
 from matplotlib.animation import FuncAnimation
 
 matplotlib.use('Qt5Agg')
@@ -14,10 +15,13 @@ plt.ion()
 ln, = ax.plot([], [], marker="o")
 x_vals = []
 y_vals = []
+my_xticks = []
+plt.xticks(x_vals, my_xticks)
 dim, max = 0, 1.0  # dimensione array da plattare, max è il valore massimo da plottare
 ax.set_xlim(-0.5, 1.5)
 ax.set_ylim(-0.2, 1.2)
 move, esci = True, False
+
 
 def mypause(interval):
     manager = plt._pylab_helpers.Gcf.get_active()
@@ -41,20 +45,30 @@ def onclick(event):
     move = False
 
 
-def prova():
+def get_input():
     global dim, max, esci
+    num_frame = 0
     for line in fileinput.input():
         line = line.rstrip('\n')
         if line == "Esci":
             esci = True
             break
         else:
-            line = line.split(" ")
-            x_vals.append(float(line[1]))
-            y_vals.append(float(line[0]))
+            line = line.split(" ")  # attenzione gli uri con spazi non funzioneranno
+            img1 = cv2.imread(line[0])
+            img2 = cv2.imread(line[1])
+            psnr = cv2.PSNR(img1, img2)
+            num_frame += 1
+            print(psnr)
+            x_vals.append(num_frame)
+            y_vals.append(psnr)
+            size = len(line[1]-1)
+            nframe = line[1][size-10:size-4].lstreap('0')  # numero del frame
+            ngop = line[1][size - 17:size - 11].lstrea('0')  # numero del frame
+            str = 'GOP ' + ngop + '#frame ' + nframe
+            my_xticks.append(str)
             dim += 1
-            if float(line[1]) > max:
-                max = float(line[1])
+            max = dim
 
 
 def init():
@@ -74,7 +88,7 @@ def animate(i):
 ani = FuncAnimation(fig, animate, init_func=init, interval=1000)
 cid1 = fig.canvas.mpl_connect('button_press_event', onclick)
 cid = fig.canvas.mpl_connect('button_release_event', onclickrelease)
-th = Thread(target=prova)
+th = Thread(target=get_input)
 th.start()
 plt.show(block=False)
 while not esci:

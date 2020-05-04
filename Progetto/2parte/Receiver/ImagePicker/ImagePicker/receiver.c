@@ -44,7 +44,7 @@ void send_packet(rtp* el){
     struct udphdr* udp = NULL;
     if (!from_loopback) {
         udp = (struct udphdr*) (el->packet + to_udphdr);
-        udp->uh_dport = htons(DPORT);
+        udp->uh_dport = htons(stat_port);
         udp->uh_sum = 0;
         if (datalink_loopback == DLT_NULL) {
             int new_len = to_iphdr - 4;
@@ -69,7 +69,7 @@ void send_packet(rtp* el){
         if (datalink_loopback == DLT_NULL)
             fix = sizeof(struct ether_header) - 4;
         udp = (struct udphdr*) (el->packet + to_udphdr - fix);
-        udp->uh_dport = htons(DPORT);
+        udp->uh_dport = htons(stat_port);
         udp->uh_sum = 0;
         send = (el->packet + to_rtphdr - fix);
         new_size = el->size - to_rtphdr + fix;
@@ -89,7 +89,7 @@ void stat_calc(rtp* el, int index, uint16_t rtp_id, uint32_t timestamp){
     if (rtp_id > stat->id_accepted) {
         stat->ids[stat->index]=rtp_id;
         stat->index++;
-        stat->delay += (el->r_timestamp - timestamp + delay_calibrator[index]); // memorizzo il delay, e poi lo dividerò quando vado a calcolare il delay
+        stat->delay += (timestamp - el->r_timestamp - delay_calibrator[index]); // memorizzo il delay, e poi lo dividerò quando vado a calcolare il delay
         if (stat->max < rtp_id)
             stat->max = rtp_id;
         if (stat->min > rtp_id)
@@ -177,13 +177,15 @@ int workOnPacket(rtp* el, int stat_index){
 
 rtp* save_packet(FILE* f, rtp* el, uint16_t* from, int fix, int end_seq){
     int rtpdata_len = el->size - to_rtpdata + fix;
-    u_char* rtpdata =(u_char*) (el->packet + to_rtpdata - fix);
+    u_char* rtpdata = (u_char*) (el->packet + to_rtpdata - fix);
     if (el->state == 128) {
         starter(&payload);
         memcpy(payload.value+payload.size, &(el->decoder), 1); // header per il frame
         payload.size += 1;
     }
     add(&payload, rtpdata+2, rtpdata_len-2);
+    fwrite(payload.value, 1, payload.size, f);
+    payload.size = 0;
     while (!el->sent); //aspetto che il pacchetto è stato spedito
     delete_hash(from);
     el = NULL;
@@ -204,14 +206,15 @@ void save_GOP(uint16_t *from, gop_info* info){
     if (!(f = fopen(GOPName, "w")))
         printf("Error: %s\n", strerror(errno));
     rtp* el = find_hash(from);
-    add(&payload, metadata.value, metadata.size);
+    //add(&payload, metadata.value, metadata.size); //se un giorno si decidesse di usare questa soluzione, solo un fwrite alla fine
+    fwrite(metadata.value, 1, metadata.size, f);
     while(el && el->nal_type == 5){ // copia tutto il pacchetto header
-        el = save_packet(f,el, from, fix, info->end_seq);
+        el = save_packet(f, el, from, fix, info->end_seq);
     }
     while (el && el->nal_type != 5) { //copia finchè non trova un nuovo GOP
-        el = save_packet(f,el, from, fix, info->end_seq);
+        el = save_packet(f, el, from, fix, info->end_seq);
     }
-    fwrite(payload.value, 1, payload.size, f);
-    payload.size = 0;
+    //fwrite(payload.value, 1, payload.size, f);
+    //payload.size = 0;
     fclose(f);
 }

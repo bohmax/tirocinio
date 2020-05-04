@@ -20,18 +20,13 @@ void logging(const char *fmt, ...){
     fprintf( stderr, "\n" );
 }
 
-void plot_value(){
-    int quality = 1;
-    static int frame = -1;
-    frame++;
-    fprintf(pipe_plot, "%d %d\n", quality, frame);
+void plot_value(char path_rec[], char path_send[]){
+    fprintf(pipe_plot, "%s %s\n", path_rec, path_send);
     fflush(pipe_plot);
 }
 
-void savePNG(AVPacket* packet, int FrameNo, int gop_num){
+void savePNG(AVPacket* packet, char PNGName[]){
     FILE *PNGFile;
-    char PNGName[128];
-    sprintf(PNGName, "%s-%06d-%06d.png", path_image, gop_num, FrameNo);
     if((PNGFile = fopen(PNGName, "wb"))){
         fwrite(packet->data, 1, packet->size, PNGFile);
         fclose(PNGFile);
@@ -40,6 +35,7 @@ void savePNG(AVPacket* packet, int FrameNo, int gop_num){
 
 int decode_to_png(AVFrame *pFrame, int FrameNo, int gop_num) {
     int result = 0;
+    char PNGName[128], PNGNameRec[128];
     // codec per png
     AVCodecContext *pngContext = NULL;
     AVCodec *pngCodec = avcodec_find_encoder(AV_CODEC_ID_PNG);
@@ -81,8 +77,10 @@ int decode_to_png(AVFrame *pFrame, int FrameNo, int gop_num) {
             fprintf(stderr, "Error during encoding\n");
             exit(1);
         }
-        savePNG(packet, FrameNo, gop_num);
-        //plot_value();
+        sprintf(PNGName, "%s-%06d-%06d.png", path_image, gop_num, FrameNo);
+        sprintf(PNGNameRec, "%s-%06d-%06d.png", path_image_sender, gop_num, FrameNo);
+        savePNG(packet, PNGName);
+        //  plot_value(PNGName, PNGNameRec);
         av_packet_unref(packet);
     }
     av_packet_free(&packet);
@@ -119,11 +117,11 @@ int pixel_to_rgb24(AVFrame *pFrame,int pix_fmt ,int FrameNo, int gop_num) {
     pFrameRGB->height = pFrame->height;
     pFrameRGB->width = pFrame->width;
     pFrameRGB->pts = FrameNo;
+    //SaveFrame(pFrameRGB, gop_num, FrameNo); // se si volesse salvarli in formato ppm
     decode_to_png(pFrameRGB, FrameNo, gop_num);
     av_frame_free(&pFrameRGB);
     free(buffer);
     sws_freeContext(img_convert_ctx);
-    //SaveFrame(pFrameRGB, pCodecCtx->width, pCodecCtx->height, FrameNo);
     return 0;
 }
 

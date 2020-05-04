@@ -14,10 +14,10 @@
 void logging(const char *fmt, ...);
 
 //calcola PSNR e plotta il risultato
-void plot_value(void);
+void plot_value(char path_rec[], char path_send[]);
 
 //salva un png in un file
-void savePNG(AVPacket* packet, int FrameNo, int gop_num);
+void savePNG(AVPacket* packet, char PNGName[]);
 
 //MIA
 //Converta in png
@@ -38,16 +38,16 @@ int create_image(gop_info* info);
 //thread che gestisce la decodifica dell'immagine
 void* decoder(void* arg);
 #endif /* h264toPng_h */
-/*
-static void SaveFrame(AVFrame *pFrame, int width, int height, int iFrame)
-{
+
+/*void SaveFrame(AVFrame *pFrame, int numGop, int numFrame){
     FILE *pFile;
-    char szFilename[64];
+    int width = pFrame->width, height = pFrame->height;
+    char PNGName[128];
     int  y;
     
     // Open file
-    sprintf(szFilename, "%sframe%d.ppm", path_file,iFrame);
-    pFile=fopen(szFilename, "wb");
+    sprintf(PNGName, "%s-%06d-%06d.ppm", path_image, numGop, numFrame);
+    pFile=fopen(PNGName, "wb");
     if(pFile==NULL)
         return;
     

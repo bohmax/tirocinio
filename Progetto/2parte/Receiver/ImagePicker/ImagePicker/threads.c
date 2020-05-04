@@ -12,7 +12,7 @@
 void termination_loopback(int signum){
     int volatile i = 0, trovato = 0;
     pthread_t self = pthread_self();
-    while(i<NUMLISTTHR && !trovato){
+    while(i<num_list && !trovato){
         if (self == listener[i]) {
             pcap_breakloop(handle[i]);
             trovato = 1;
@@ -41,7 +41,7 @@ void* segnali(void *arg){
     printf("In uscita..\n");
     esci = 1;
     //invia segnali a listener per sbloccarlo da pcap loop
-    for (int i=0; i<NUMLISTTHR; i++)
+    for (int i=0; i<num_list; i++)
         pthread_kill(listener[i], SIGALRM);
     pthread_kill(stat_thr, SIGALRM); //sveglia thread statistiche per un uscita rapida
     /* inviare qui un pacchetto falzo per essere sicuri di uscire */
@@ -51,7 +51,7 @@ void* segnali(void *arg){
     //svuota la lista di decodifica
     pthread_mutex_lock(&mtx_dec);
     freeList(&testa_dec, &coda_dec, &freeGOP);
-    for (int i = 0; i < NUMDECODERTHR; i++) {
+    for (int i = 0; i < num_decoder; i++) {
         pushList(&testa_dec, &coda_dec, setElGOP(-1, -1));
         pthread_cond_signal(&cond_dec);
     }
@@ -61,28 +61,42 @@ void* segnali(void *arg){
 
 void* statThread(void* arg){
     int i = 0;
-    int index[NUMLISTTHR]; //indice dei vari array delle stat
-    uint16_t copy_array[NUMLISTTHR][DIMARRSTAT];
-    uint16_t current[NUMLISTTHR]; //viene usato per calcolare out of ord
-    send_stat spedisci[NUMLISTTHR];
-    memset(spedisci, 0, sizeof(send_stat)*NUMLISTTHR);
+    int* index = malloc(sizeof(int)*num_list); //indice dei vari array delle stat
+    uint16_t** copy_array = malloc(sizeof(uint16_t*)*num_list);
+    uint16_t* current = malloc(sizeof(uint16_t)*num_list); //viene usato per calcolare out of ord
+    send_stat* spedisci = malloc(sizeof(send_stat)*num_list);
+    for(int i = 0; i<num_list;i++){
+        index[i] = 0;
+        current[i] = 0;
+        copy_array[i] = malloc(sizeof(uint16_t)*DIMARRSTAT);
+        for (int j = 0; j < DIMARRSTAT; j++)
+            copy_array[i][j] = 0;
+        memset(&spedisci[i], 0, sizeof(send_stat));
+    }
+    memset(spedisci, 0, sizeof(send_stat)*num_list);
     int sockfd = set_stat_sock(); //in utility.c
     while (!esci) {
-        usleep(LFINESTRA);
-        for (i = 0; i<NUMLISTTHR; i++) {
+        usleep(stat_interv);
+        for (i = 0; i<num_list; i++) {
             pthread_mutex_lock(&mtxstat[i]);
-            stat_t stat = statistiche[i];
-            memcpy(copy_array[i], stat.ids, stat.index);
-            index[i] = stat.index;
-            spedisci[i].perdita = stat.index - (stat.max - stat.min);
-            spedisci[i].delay = stat.delay;
-            current[i] = stat.min;
-            stat.id_accepted = stat.max;
-            stat.index = 0;
+            stat_t* stat = &statistiche[i];
+            index[i] = stat->index;
+            for(int x=0; x<stat->index;x++)
+                copy_array[i][x] = stat->ids[x];
+            spedisci[i].perdita = stat->index - (stat->max - stat->min) - 1;
+            spedisci[i].delay = stat->delay;
+            current[i] = stat->min;
+            stat->id_accepted = stat->max;
+            stat->index = 0;
+            stat->delay = 0;
+            stat->min = -1;
+            stat->max = 0;
+            stat->delay = 0;
+            delay_calibrator[i] = -1;
             pthread_mutex_unlock(&mtxstat[i]);
         }
         //inizio vero calcolo stastiche
-        for (i = 0; i < NUMLISTTHR; i++) {
+        for (i = 0; i < num_list; i++) {
             if(index[i] > 0){
                 //solo la perdita viene calcolata prima
                 spedisci[i].delay = spedisci[i].delay/index[i];
@@ -104,6 +118,12 @@ void* statThread(void* arg){
     // close the socket
     if (sockfd != -1)
         close(sockfd);
+    free(index);
+    for(int i = 0; i<num_list;i++)
+        free(copy_array[i]);
+    free(copy_array);
+    free(current);
+    free(spedisci);
     return (void*) 0;
 }
 
@@ -131,8 +151,8 @@ void* ReaderPacket(void* arg){
     int esci = 0, ret;
     gop_info* el = NULL;
     uint16_t* from = malloc(sizeof(uint16_t));
-    pthread_t decodehandler[NUMDECODERTHR];
-    for (int i = 0; i < NUMDECODERTHR; i++)
+    pthread_t decodehandler[num_decoder];
+    for (int i = 0; i < num_decoder; i++)
         SYSFREE(ret,pthread_create(&decodehandler[i],NULL,&DecoderThread,NULL),0,"thread")
     while (!esci) {
         pthread_mutex_lock(&mtx_ord);
@@ -141,7 +161,7 @@ void* ReaderPacket(void* arg){
         el = popList(&testa_ord, &coda_ord);
         pthread_mutex_unlock(&mtx_ord);
         if (el->start_seq != -1) {
-            usleep(200000); //aspetta altri pacchetti per 200ms
+            usleep(LFINESTRA); //aspetta altri pacchetti per 200ms
             *from = el->start_seq;
             save_GOP(from, el);
             pthread_mutex_lock(&mtx_dec);
@@ -153,13 +173,13 @@ void* ReaderPacket(void* arg){
     }
     free(from);
     freeGOP((void**)&el);
-    for (int i = 0; i < NUMDECODERTHR; i++) {
+    for (int i = 0; i < num_decoder; i++) {
         pthread_mutex_lock(&mtx_dec);
         pushList(&testa_dec, &coda_dec, setElGOP(-1, -1));
         pthread_cond_signal(&cond_dec);
         pthread_mutex_unlock(&mtx_dec);
     }
-    for (int i = 0; i < NUMDECODERTHR; i++)
+    for (int i = 0; i < num_decoder; i++)
         SYSFREE(ret,pthread_join(decodehandler[i],NULL),0,"decode 1")
     printf("Thread per salvare il GOP chiude\n");
     return (void*) 0;

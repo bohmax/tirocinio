@@ -11,6 +11,7 @@
 icl_hash_t* hash_packet = NULL; /* definita tutto in utility.h */
 char* path_file = NULL;
 char* path_image = NULL;
+char* path_image_sender = NULL; //path delle immagini create dal sender
 list* testa_gop = NULL;
 list* coda_gop = NULL;
 list* testa_ord = NULL;
@@ -28,7 +29,7 @@ pthread_mutex_t mtx_ord = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond_ord = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t mtx_info = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t mtxhash[HSIZE/DIV];
-pthread_mutex_t mtxstat[NUMLISTTHR];
+pthread_mutex_t* mtxstat;
 sigset_t sigset_usr; /* maschera globale dei segnali */
 pcap_t** handle;    /* packet capture handle */
 pcap_t* loopback;    /* loopback interface */
@@ -40,7 +41,8 @@ int datalink_loopback = 0;
 struct sockaddr_in servaddr;
 int fd; //file descriptor del socket per inoltrare nuovamente i pacchetti
 FILE* pipe_plot;
-long delay_calibrator[NUMLISTTHR];
+long* delay_calibrator;
+int num_list = 1, from_port = 5000, stat_port = DPORT, stat_interv = LFINESTRA, num_decoder = NUMDECODERTHR;
 
 void set_pipe(){
     pipe_plot = popen("python3 ~/PycharmProjects/plotting/plot.py", "w");
@@ -109,13 +111,14 @@ void set_signal(){
 
 void inizialize_mtx(){
     int notused, size = HSIZE/DIV;
+    mtxstat = malloc(sizeof(pthread_mutex_t)*num_list);
     for(int i=0; i < size; i++){
         if((notused=pthread_mutex_init(&mtxhash[i], NULL)<0)){
             perror("impossibile inizializzare mutex");
             exit(errno);
         }
     }
-    for(int i=0; i < NUMLISTTHR; i++){
+    for(int i=0; i < num_list; i++){
         if((notused=pthread_mutex_init(&mtxstat[i], NULL)<0)){
             perror("impossibile inizializzare mutex");
             exit(errno);
@@ -133,7 +136,7 @@ void set_socket(){
     bzero(&servaddr,sizeof(servaddr));
     servaddr.sin_family = AF_INET;
     servaddr.sin_addr.s_addr = inet_addr(HOSTNAME);
-    servaddr.sin_port = htons(DPORT);
+    servaddr.sin_port = htons(stat_port);
 }
 
 int main(int argc, const char * argv[]) {
@@ -144,17 +147,30 @@ int main(int argc, const char * argv[]) {
     char* stringfilter = malloc(64);
     memset(stringfilter, '0', 64);
     pcap_if_t *alldevs = NULL;
-    statistiche = malloc(sizeof(stat_t)*NUMLISTTHR);
-    listener = malloc(sizeof(pthread_t)*NUMLISTTHR);
-    handle = malloc(sizeof(pcap_t*)*NUMLISTTHR);
-    memset(statistiche, 0, sizeof(stat_t)*NUMLISTTHR);
     pthread_t order;
-    
     struct bpf_program fp;        /* to hold compiled program */
-    if (argc != 4) exit(EXIT_FAILURE);
+    
+    if (argc != 10) exit(EXIT_FAILURE);
     dev_name = (char*) argv[1];
-    path_file = (char*) argv[2];
-    path_image = (char*) argv[3];
+    num_list = atoi(argv[2]);
+    from_port = atoi(argv[3]);
+    stat_port = atoi(argv[4]);
+    path_file = (char*) argv[5];
+    path_image = (char*) argv[6];
+    path_image_sender = (char*) argv[7];
+    stat_interv = atoi(argv[8]);
+    num_decoder = atoi(argv[9]);
+    
+    statistiche = malloc(sizeof(stat_t)*num_list);
+    listener = malloc(sizeof(pthread_t)*num_list);
+    delay_calibrator = malloc(sizeof(long)*num_list);
+    handle = malloc(sizeof(pcap_t*)*num_list);
+    for (int i = 0; i<num_list; i++){
+        memset(&statistiche[i], 0, sizeof(stat_t));
+        delay_calibrator[i] = -1;
+        statistiche[i].min = -1;
+    }
+    
     if(pcap_findalldevs(&alldevs, errbuf)==-1) exit(EXIT_FAILURE);
     //set_pipe();
     set_socket();
@@ -168,18 +184,18 @@ int main(int argc, const char * argv[]) {
     SYSFREE(notused,pthread_create(&order,NULL,&ReaderPacket,NULL),0,"thread") // ctrl-c to stop sniffing
     //device = find_device(alldevs, dev_name); //se è null provo a leggere offline
     printf("Sniffing on device: %s\n", dev_name);
-    for (int i=0; i<NUMLISTTHR; i++){
+    for (int i=0; i<num_list; i++){
         // fetch the network address and network mask
         int* id = malloc(sizeof(int));
         *id = i;
-        sprintf(stringfilter, "not icmp and udp and dst port %d", (5000 + i));
+        sprintf(stringfilter, "not icmp and udp and dst port %d", (from_port + i));
         set_handler(dev_name, i, &fp, stringfilter, errbuf);
         delay_calibrator[i] = -1;
         SYSFREE(notused,pthread_create(&listener[i],NULL,&listenerThread,id),0,"thread")
     }
     get_loopback(alldevs, dev_name, errbuf);
     printf("Aspetta i thread\n");
-    for (int i=0; i<NUMLISTTHR; i++)
+    for (int i=0; i<num_list; i++)
         SYSFREE(notused,pthread_join(listener[i],NULL),0,"listener 1")
     /* libera lista e invia segnale di chiusura a order */
     pthread_mutex_lock(&mtx_ord);
@@ -192,7 +208,7 @@ int main(int argc, const char * argv[]) {
     SYSFREE(notused,pthread_join(segnal,NULL),0,"join 1")
     printf("Uscita dal programma\n");
     pcap_freecode(&fp);
-    for (int i = 0; i < NUMLISTTHR; i++) {
+    for (int i = 0; i < num_list; i++) {
         pcap_close(handle[i]);
     }
     if (!from_loopback)
@@ -206,6 +222,8 @@ int main(int argc, const char * argv[]) {
     free(statistiche);
     free(listener);
     free(stringfilter);
+    free(delay_calibrator);
+    free(mtxstat);
     clock_t end = clock();
     close(fd);
     //chiudi plot

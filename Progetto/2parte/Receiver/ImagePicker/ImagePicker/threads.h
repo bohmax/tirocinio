@@ -17,16 +17,22 @@ void termination_loopback(int signum);
 //thread per la gestione dei segnali per far terminare il programma
 void* segnali(void *arg);
 
+//thread delle statistiche
 void* statThread(void* arg);
 
+//thread che si occupa della decodifica delle immagini
 void* DecoderThread(void* arg);
 
+//thread che si occupa di creare i GOP e salvarli
 void* ReaderPacket(void* arg);
 
+//thread che definisce i GOP
 void* GOPThread(void* arg);
 
+//thread che sniffa i pacchetti
 void* listenerThread(void* arg);
 
+//callback per sniffare i pacchetti
 void sniff(u_char *useless, const struct pcap_pkthdr* pkthdr, const u_char* packet);
 
 #endif /* threads_h */

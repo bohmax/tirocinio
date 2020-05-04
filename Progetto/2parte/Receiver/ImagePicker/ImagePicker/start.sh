@@ -2,14 +2,17 @@
 helper="NAME
 	Stream - Permette la visualizzazione di più stream rtp in un unico video
 SYNOPSIS
-	helper INTERFACE HOW_MANY_CHANNEL SRC_PORT DST_PORT GOP_FOLDER IMG_FOLDER
+	helper INTERFACE HOW_MANY_CHANNEL SRC_PORT DST_PORT GOP_FOLDER IMG_FOLDER IMG_FOLDER_SEND STAT_LEN NUM_DECODER
 DESCRIPTION
 	INTERFACE è l'interfaccia da cui sniffare i pacchetti
 	HOW_MANY_CHANNEL il numero di canali
 	SRC_PORT il primo numero di porta da cui sniffare i pacchetti
 	DST_PORT porta di destinazione del video e porta per inviare le statistiche
 	GOP_FOLDER è la cartella in cui verranno salvati i GOP
-	IMG_FOLDER è la cartella in cui verranmno salvate le immagini dei GOP.
+	IMG_FOLDER è la cartella in cui verranmno salvate le immagini dei GOP
+	IMG_FOLDER_SEND è la cartella in cui il sender salva le immagini dei GOP
+	STAT_LEN Tempo che intercorre prima di inviare le statistiche
+	NUM_DECODER Numero di thread che decodificano il GOP.
 AUTHOR
 	Written by Massimo Puddu
 	"
@@ -18,7 +21,7 @@ if [[ $UID != 0 ]]; then
     echo "sudo $0 $*"
     exit 1
 fi
-if [ "$#" -ne 3 ]; then
+if [ "$#" -ne 9 ]; then
     echo "$helper"
     exit 1
 fi
@@ -40,5 +43,5 @@ fi
 
 eval $GSTREAM_LOC $PIPELINE $SCREEN &
 PID="$!"
-./client "$1" "$2" "$3"
+./client "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9"
 wait $PID

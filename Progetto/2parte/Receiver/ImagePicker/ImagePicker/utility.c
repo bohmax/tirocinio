@@ -24,7 +24,7 @@ int set_stat_sock(){
     // assign IP, PORT
     servaddr.sin_family = AF_INET;
     servaddr.sin_addr.s_addr = inet_addr(HOSTNAME);
-    servaddr.sin_port = htons(DPORT);
+    servaddr.sin_port = htons(stat_port);
     // connect the client socket to server socket
     while (tentativi < 5 && !esci) {
         if (connect(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr)) != 0) {
@@ -66,31 +66,29 @@ uint16_t stat_lunghezza(uint16_t arr[], int index){
 uint16_t stat_out_of_order(uint16_t arr[], uint16_t current, int index){
     int j = 0;
     uint16_t out = 0;
-    uint16_t max_actual = current;
     for (j = 0; j < index; j++) {
-        if(current == arr[j]){
+        if (current != arr[j]) {
             out++;
-            current = max_actual;
-        } else if (max_actual < arr[j])
-            max_actual = arr[j];
+        }
+        current++;
     }
     return out;
 }
 
 void send_to_server(int sockfd, send_stat spedisci[]){
-    writen(sockfd, spedisci, sizeof(send_stat)*NUMLISTTHR);
+    writen(sockfd, spedisci, sizeof(send_stat)*num_list);
 }
 
 // algoritmo preso da https://it.mathworks.com/matlabcentral/fileexchange/37691-psnr-for-rgb-images
 //src e dst sono le immagini da confrontare, w e h sono dimensioni delle due immagini che devono coincidere(non viene controllato)
-//float calculate_PSNR(u_char* src, u_char* dst, int w, int h){
-//    return (float)(10.0*log10( pow(255,2) / calculate_MSE(src, dst, w, h))); //255 è per le immagini 8 bit
-//}
+/*float calculate_PSNR(u_char* src, u_char* dst, int w, int h){
+    return (float)(10.0*log10( pow(255,2) / calculate_MSE(src, dst, w, h))); //255 è per le immagini 8 bit
+}
 
-/*float calculate_MSE(u_char* src, u_char* dst, int w, int h){
-    float mseR = sum(sum(mseRImage)) / (rows * columns);
-    float mseG = sum(sum(mseGImage)) / (rows * columns);
-    float mseB = sum(sum(mseBImage)) / (rows * columns);
+float calculate_MSE(u_char* src, u_char* dst, int w, int h){
+    float mseR = sum(sum(mseRImage)) / (w * h);
+    float mseG = sum(sum(mseGImage)) / (w * h);
+    float mseB = sum(sum(mseBImage)) / (w * h);
     
     return (mseR + mseG + mseB)/3;
 }*/

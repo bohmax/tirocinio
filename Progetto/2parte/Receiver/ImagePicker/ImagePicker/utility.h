@@ -50,6 +50,7 @@ extern string metadata; //dovrà contenere SPS e PPS
 extern gop_info* info;  /* utilizzato per creare le immagini */
 extern char* path_file;   /* path del file su cui viene salvato lo streaming*/
 extern char* path_image;   /* path su cui saranno salvate le immagini*/
+extern char* path_image_sender; /* path delle immagini create dal sender */
 extern int esci;            /* indica l'uscita dal programma*/
 extern int num_pkt; //numero dei pacchetti arrivati
 extern pthread_mutex_t mtx_gop;  /* mutex per fare produttore consumatore con il decodificatore */
@@ -60,7 +61,7 @@ extern pthread_mutex_t mtx_dec;  /* mutex per fare produttore consumatore con il
 extern pthread_cond_t cond_dec;  /* variabile di condizione per produttore consumatore*/
 extern pthread_mutex_t mtx_info;  /* mutex per poter utilizzare la variabile info */
 extern pthread_mutex_t mtxhash[HSIZE/DIV]; /* mutex della tabella hash*/
-extern pthread_mutex_t mtxstat[NUMLISTTHR];
+extern pthread_mutex_t* mtxstat;
 extern list* testa_gop;
 extern list* coda_gop;  /* coda della lista sopra */
 extern list* testa_ord; /* lista dei pacchetti */
@@ -69,7 +70,8 @@ extern list* testa_dec;
 extern list* coda_dec;  /* coda della lista sopra */
 extern sigset_t sigset_usr;
 extern stat_t* statistiche;
-extern long delay_calibrator[NUMLISTTHR]; // calcola il delay del primo pacchetto
+extern int num_list, from_port, stat_port, stat_interv, num_decoder; /* variabili per l'input */
+extern long* delay_calibrator; // calcola il delay del primo pacchetto
 
 //inizializzazione socket, ritorna socket fd
 int set_stat_sock(void);
@@ -86,6 +88,7 @@ uint16_t stat_out_of_order(uint16_t arr[], uint16_t current, int index);
 // Function designed for chat between client and server.
 void send_to_server(int sockfd, send_stat spedisci[]);
 
+/* IL CALCOLO DEL PSNR VIENE FATTO SU PYTHON NELLO SCRIPT DEL GRAFICO DEL PSNR NON QUA */
 // algoritmi presi da https://it.mathworks.com/matlabcentral/fileexchange/37691-psnr-for-rgb-images
 //float calculate_PSNR(u_char* src, u_char* dst, int w, int h);
 //float calculate_MSE(u_char* src, u_char* dst, int w, int h);

@@ -16,12 +16,12 @@ TARGETS		= client
 
 
 # aggiungere qui i file oggetto da compilare
-OBJECTS		=	utility.o \
+OBJECTS		=	struct_fun.o \
+				utility_fun.o \
 				receiver.o \
 				icl_hash.o  \
 				h264toPng.o \
 				lista.o \
-				struct_fun.o \
 				threads.o 
 
 # aggiungere qui gli altri include 

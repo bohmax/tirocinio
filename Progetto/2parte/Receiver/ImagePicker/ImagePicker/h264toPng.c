@@ -21,8 +21,10 @@ void logging(const char *fmt, ...){
 }
 
 void plot_value(char path_rec[], char path_send[]){
+    pthread_mutex_lock(&mtxplot);
     fprintf(pipe_plot, "%s %s\n", path_rec, path_send);
     fflush(pipe_plot);
+    pthread_mutex_unlock(&mtxplot);
 }
 
 void savePNG(AVPacket* packet, char PNGName[]){

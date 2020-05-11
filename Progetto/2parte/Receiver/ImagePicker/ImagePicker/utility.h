@@ -29,6 +29,7 @@
 #include "packet_structs.h"
 #include "define.h"
 #include "struct.h"
+#include "utility_fun.h"
 #include "struct_fun.h"
 #include "receiver.h"
 #include "threads.h"
@@ -61,7 +62,8 @@ extern pthread_mutex_t mtx_dec;  /* mutex per fare produttore consumatore con il
 extern pthread_cond_t cond_dec;  /* variabile di condizione per produttore consumatore*/
 extern pthread_mutex_t mtx_info;  /* mutex per poter utilizzare la variabile info */
 extern pthread_mutex_t mtxhash[HSIZE/DIV]; /* mutex della tabella hash*/
-extern pthread_mutex_t* mtxstat;
+extern pthread_mutex_t* mtxstat; /* mutex per modificare le statistiche */
+extern pthread_mutex_t mtxplot; /* mutex per scrivere nella pipe del plot */
 extern list* testa_gop;
 extern list* coda_gop;  /* coda della lista sopra */
 extern list* testa_ord; /* lista dei pacchetti */
@@ -72,50 +74,5 @@ extern sigset_t sigset_usr;
 extern stat_t* statistiche;
 extern int num_list, from_port, stat_port, stat_interv, num_decoder; /* variabili per l'input */
 extern long* delay_calibrator; // calcola il delay del primo pacchetto
-
-//inizializzazione socket, ritorna socket fd
-int set_stat_sock(void);
-
-//funzione di comparazione per il qsort
-int cmpfunc (const void * a, const void * b);
-
-//per calolare la statistica sulla lunghezza della perdita
-uint16_t stat_lunghezza(uint16_t arr[], int index);
-
-//per calolare la statistica sul out of order
-uint16_t stat_out_of_order(uint16_t arr[], uint16_t current, int index);
-
-// Function designed for chat between client and server.
-void send_to_server(int sockfd, send_stat spedisci[]);
-
-/* IL CALCOLO DEL PSNR VIENE FATTO SU PYTHON NELLO SCRIPT DEL GRAFICO DEL PSNR NON QUA */
-// algoritmi presi da https://it.mathworks.com/matlabcentral/fileexchange/37691-psnr-for-rgb-images
-//float calculate_PSNR(u_char* src, u_char* dst, int w, int h);
-//float calculate_MSE(u_char* src, u_char* dst, int w, int h);
-
-//funzioni di utlità per la tabella hash
-void* insert_hash(uint16_t primarykey, void* insert);
-
-void* find_hash(uint16_t* primarykey);
-
-int delete_hash(uint16_t* primarykey);
-
-//per scrivere nel socket delle statistiche
-static inline int writen(int fd, void *buf, size_t size) {
-    size_t left = size;
-    int r=0;
-    char *bufptr = (char*)buf;
-    while(left>0) {
-        r=(int)write(fd ,bufptr,left);
-        if (r == -1) {
-            if (errno == EINTR || errno==EPIPE) continue;
-            return -1;
-        }
-        if (r == 0) return 0;
-        left    -= r;
-        bufptr  += r;
-    }
-    return 1;
-}
 
 #endif /* utility_h */

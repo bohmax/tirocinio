@@ -26,8 +26,9 @@ pthread_cond_t cond_gop = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t mtx_dec = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond_dec = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t mtx_ord = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mtx_info = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mtxplot = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond_ord = PTHREAD_COND_INITIALIZER;
-pthread_mutex_t mtx_info = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t mtxhash[HSIZE/DIV];
 pthread_mutex_t* mtxstat;
 sigset_t sigset_usr; /* maschera globale dei segnali */
@@ -106,6 +107,7 @@ void set_signal(){
     ERRORSYSHEANDLER(notused,sigaddset( &sigset_usr, SIGINT),-1,"NO ADDSET")
     ERRORSYSHEANDLER(notused,sigaddset( &sigset_usr, SIGTERM),-1,"NO ADDSET")
     ERRORSYSHEANDLER(notused,sigaddset( &sigset_usr, SIGQUIT),-1,"NO ADDSET")
+    ERRORSYSHEANDLER(notused,sigaddset( &sigset_usr, SIGPIPE),-1,"NO ADDSET")
     ERRORSYSHEANDLER(notused,pthread_sigmask(SIG_SETMASK, &sigset_usr, NULL),-1,"NO SIGMAS")
 }
 
@@ -148,7 +150,7 @@ int main(int argc, const char * argv[]) {
     memset(stringfilter, '0', 64);
     pcap_if_t *alldevs = NULL;
     pthread_t order;
-    struct bpf_program fp;        /* to hold compiled program */
+    struct bpf_program* fp = NULL;        /* to hold compiled program */
     
     if (argc != 10) exit(EXIT_FAILURE);
     dev_name = (char*) argv[1];
@@ -165,10 +167,15 @@ int main(int argc, const char * argv[]) {
     listener = malloc(sizeof(pthread_t)*num_list);
     delay_calibrator = malloc(sizeof(long)*num_list);
     handle = malloc(sizeof(pcap_t*)*num_list);
+    fp = malloc(sizeof(struct bpf_program)*num_list);
     for (int i = 0; i<num_list; i++){
         memset(&statistiche[i], 0, sizeof(stat_t));
+        statistiche[i].ids = malloc(sizeof(uint16_t)*DIMARRSTAT);
+        for (int j = 0; j<DIMARRSTAT; j++)
+            statistiche[i].ids[j] = 0;
         delay_calibrator[i] = -1;
         statistiche[i].min = -1;
+        memset(&fp[i], 0, sizeof(struct bpf_program));
     }
     
     if(pcap_findalldevs(&alldevs, errbuf)==-1) exit(EXIT_FAILURE);
@@ -176,11 +183,10 @@ int main(int argc, const char * argv[]) {
     set_socket();
     set_signal();
     inizialize_mtx();
-    info = setElGOP(0, -1); //primo gop, parte da 0
+    info = setElGOP(-1, -1); //primo gop, parte da 0
     hash_packet = icl_hash_create(HSIZE, uint16_hash_function, uint_16t_key_compare);
     //avvio thread che gestisce i segnali
     SYSFREE(notused,pthread_create(&segnal,NULL,&segnali,NULL),0,"thread")
-    SYSFREE(notused,pthread_create(&stat_thr,NULL,&statThread,NULL),0,"thread")
     SYSFREE(notused,pthread_create(&order,NULL,&ReaderPacket,NULL),0,"thread") // ctrl-c to stop sniffing
     //device = find_device(alldevs, dev_name); //se è null provo a leggere offline
     printf("Sniffing on device: %s\n", dev_name);
@@ -189,11 +195,13 @@ int main(int argc, const char * argv[]) {
         int* id = malloc(sizeof(int));
         *id = i;
         sprintf(stringfilter, "not icmp and udp and dst port %d", (from_port + i));
-        set_handler(dev_name, i, &fp, stringfilter, errbuf);
+        set_handler(dev_name, i, &fp[i], stringfilter, errbuf);
+        if (!loopback)
+            get_loopback(alldevs, dev_name, errbuf);
         delay_calibrator[i] = -1;
         SYSFREE(notused,pthread_create(&listener[i],NULL,&listenerThread,id),0,"thread")
     }
-    get_loopback(alldevs, dev_name, errbuf);
+    SYSFREE(notused,pthread_create(&stat_thr,NULL,&statThread,NULL),0,"thread statistiche") //ora sono pronto per le statistiche
     printf("Aspetta i thread\n");
     for (int i=0; i<num_list; i++)
         SYSFREE(notused,pthread_join(listener[i],NULL),0,"listener 1")
@@ -207,8 +215,8 @@ int main(int argc, const char * argv[]) {
     pthread_kill(segnal, SIGINT); //manda un segnale al thread
     SYSFREE(notused,pthread_join(segnal,NULL),0,"join 1")
     printf("Uscita dal programma\n");
-    pcap_freecode(&fp);
     for (int i = 0; i < num_list; i++) {
+        pcap_freecode(&fp[i]);
         pcap_close(handle[i]);
     }
     if (!from_loopback)
@@ -218,7 +226,10 @@ int main(int argc, const char * argv[]) {
     freeList(&testa_dec, &coda_dec, &freeGOP);
     freeList(&testa_ord, &coda_ord, &freeGOP);
     icl_hash_destroy(hash_packet, &freeKeyHash, &freeElHash);
+    free(fp);
     free(handle);
+    for(int i=0; i<num_list; i++)
+        free(statistiche[i].ids);
     free(statistiche);
     free(listener);
     free(stringfilter);

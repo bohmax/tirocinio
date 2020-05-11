@@ -53,7 +53,7 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "lo0 1 5000 9998 /Users/maxuel/Desktop/gopfolder_r/gop /Users/maxuel/Desktop/imgfolder_r/frame /Users/maxuel/Desktop/imgfolder/frame 200000 2"
+            argument = "lo0 4 5000 9998 /Users/maxuel/Desktop/gopfolder_r/gop /Users/maxuel/Desktop/imgfolder_r/frame /Users/maxuel/Desktop/imgfolder/frame 200000 2"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument

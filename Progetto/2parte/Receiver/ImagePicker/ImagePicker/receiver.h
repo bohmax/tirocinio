@@ -21,7 +21,7 @@ void add(string* dst, u_char src[], int src_len);
 void stat_calc(rtp* el, int index, uint16_t rtp_id, uint32_t timestamp);
 
 //Crea l'header per tutti i pacchetti dello streaming
-void create_header_information(u_char* rtpdata, unsigned int fragment_type, int rtpdata_len);
+//void create_header_information(u_char* rtpdata, unsigned int fragment_type, int rtpdata_len, uint16_t seq_num);
 
 //aggiungi i dati di un rtp al payload
 //ritorna uno se il gop è terminato 0 altrimenti
@@ -33,6 +33,9 @@ int workOnPacket(rtp* el, int stat_index);
 
 //prende i pacchetti dalla tabella hash a partire da from, fino a un nuovo GOP
 void save_GOP(uint16_t *from, gop_info* info);
+
+// per preparare payload in modo che contenga l'header del gop, da chiamare all'interno di un while
+rtp* set_header(rtp* el, uint16_t* from, int fix, int end_seq);
 
 //spedisce i pacchetti
 void send_packet(rtp* el);

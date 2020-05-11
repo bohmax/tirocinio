@@ -17,11 +17,15 @@ uint16_t* setkeyHash(uint16_t key);
 stat_t* setStat(void);
 
 /* funzioni per inizializzare e liberare elementi che verrano inseriti nella lista*/
-rtp* setElRTP(u_char* buf, int size, long timestamp, int npkt);
+rtp* setElRTP(u_char* buf, int size, long timestamp, int npkt, int from_thr);
 
 void freeRTP(void** el); //list è un elemento occhio al nome
 
+//crea un gop fittizzio da inviare per la chiusura dei thread appositi o come primo thread
 gop_info* setElGOP(int gop_num, int start);
+
+//per inizializzare il prossimo gop
+gop_info* setNextElGOP(int gop_num, int start, int last_frame_gop, int start_new_gop, int new_metadata);
 
 void freeGOP(void** el);
 

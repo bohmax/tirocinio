@@ -3,15 +3,18 @@ from ctypes import *
 import sys
 from decimal import Decimal
 
-usec = 1000000
-nanosec = 1000000000
-
 
 class Timespec(Structure):
     """ timespec struct for nanosleep, see:
       http://linux.die.net/man/2/nanosleep """
     _fields_ = [('tv_sec', c_long),
                 ('tv_nsec', c_long)]
+
+
+usec = 1000000
+nanosec = 1000000000
+timespec = Timespec()
+timespec.tv_sec = c_long(0)
 
 
 class Timing:
@@ -33,8 +36,9 @@ class Timing:
     def delay_calculator(self, current_pkt_time, first_pkt_time, start_calculation_time):
         ideale = current_pkt_time - first_pkt_time
         attuale = time.time() - start_calculation_time
-        #print('ideale: ' + str(ideale) + ' attuale: ' + str(attuale) + ' diff: ' + str(ideale - Decimal(attuale)))
-        return ideale - Decimal(attuale)
+        diff = ideale - Decimal(attuale)
+        print('ideale: ' + str(ideale) + ' attuale: ' + str(attuale) + ' diff: ' + str(diff))
+        return float(diff)
 
     """
     il Thread dorme per time millisecondi
@@ -51,11 +55,12 @@ class Timing:
     @:param nsec1:  nanosecondi compresi tra 0 e 999999999 specifica per quanto tempo il thread deve dormire
     """
     def nsleep(self, temp):
-        #if not self.windows: #too slow :(
-        #    timespec = Timespec()
-        #    timespec.tv_sec = c_long(0)
-        #    timespec.tv_nsec = c_long(temp*nanosec)
-        #    print(self.libc.nanosleep(pointer(timespec), None))
+        #if not self.windows:  # too slow :(
+        #    target_time = time.time() + float(temp)
+        #    while (target_time - time.time()) > 0.25:  # entra sse ho un grosso vantaggio
+        #        temp = target_time - time.time()
+        #        timespec.tv_nsec = c_long(int(temp * nanosec))
+        #        self.libc.nanosleep(pointer(timespec), None)
         #else:
         self.__winsleep(temp)
 

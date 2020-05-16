@@ -81,9 +81,6 @@ void* statThread(void* arg){
     int sockfd = set_stat_sock(); //in utility.c
     while (!esci) {
         ris = nanosleep(&ts, NULL);
-        if (ris == -1) {
-            errno = 0;
-        }
         for (i = 0; i<num_list; i++) {
             pthread_mutex_lock(&mtxstat[i]);
             stat_t* stat = &statistiche[i];

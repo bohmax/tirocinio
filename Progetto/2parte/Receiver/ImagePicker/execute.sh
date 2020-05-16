@@ -25,6 +25,11 @@ input[9]=$(awk '/^lunghezza_finestra_statistiche/{print $3}' "$1") #lunghezza de
 input[10]=$(awk '/^num_decoder_thread/{print $3}' "$1") #numero dei thread del decoder
 input[11]=$(awk '/^ip/{print $3}' "$1") #ip su cui inviare i pacchetti dal sender
 input[12]=$(awk '/^port_rtp_pcap/{print $3}' "$1") #porta che contiente in flusso rtp del file pcap
+input[13]=$(awk '/^gamma_evento/{print $3}' "$1") #valore di gamma che mi indica in quale intervallo iniziare l'evento di perdita
+input[14]=$(awk '/^beta_evento/{print $3}' "$1") #valore di beta che mi indica in quale intervallo iniziare l'evento di perdita
+input[13]=$(awk '/^gamma_perdita/{print $3}' "$1") #valore di gamma che mi indica quanti pacchetti perdere
+input[14]=$(awk '/^beta_perdita/{print $3}' "$1") #valore di beta che mi indica quanti pacchetti perdere
+input[15]=$(awk '/^delay/{print $3}' "$1") #dalay massimo con cui ritardare un pacchetto
 
 for i in "${input[@]}"
 do

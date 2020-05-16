@@ -1,7 +1,6 @@
 from scapy.all import *
 from scapy.layers.inet import IP, UDP
 from scapy.layers.l2 import Ether, Loopback
-from scapy.layers.rtp import RTP
 
 
 class Sender:
@@ -28,7 +27,7 @@ class Sender:
         self._ip = ip
         self._port = port
 
-    def send(self, pkt, indice):
+    def set_packet(self, pkt):
         if not self._loopback:
             pkt[Ether].src = self._mac_address
             del pkt[Ether].dst
@@ -38,9 +37,17 @@ class Sender:
             pkt = pkt.getlayer(IP)
         pkt[IP].src = self._src_ip
         pkt[IP].dst = self._ip
-        pkt[UDP].dport = self._port
         del pkt[IP].chksum
         del pkt[UDP].chksum
+        return pkt
+
+    def send_setted(self, pkt, indice):
+        pkt[UDP].dport = self._port
+        self._operatore.send(self._socket, pkt, indice)
+
+    def send_unsetted(self, pkt, indice):
+        pkt = self.set_packet(pkt)
+        pkt[UDP].dport = self._port
         self._operatore.send(self._socket, pkt, indice)
 
     def setIP(self, dstip):

@@ -39,6 +39,19 @@ do
 	fi
 done
 
-python3 Scheduler.py "{input[0]}" "{input[3]}" "{input[11]}" "{input[12]}" "{input[1]}" "{input[2]}" "{input[4]}" "{input[5]}" "{input[6]}" &
-sleep(2)
-/ImagePicker/start.sh "{input[3]}" "{input[1]}" "{input[2]}" "{input[4]}" "{input[7]}" "{input[8]}" "{input[6]}" "{input[9]}" "{input[10]}"
+for i in {5..8}
+do
+	if [ ! -d "${input[$i]}" ]; then # controlla che la directory non esista, se non esistono le crea
+		if ! mkdir -p "${input[$i]}" ; then
+			echo "Impossibile creare la cartella gop lato sender"
+			exit 0
+		fi
+	fi
+	length=${#input[i]}
+	last_char=${input[i]:length-1:1}
+	[[ $last_char != "/" ]] && input[i]="${input[i]}/";
+done
+
+#python3 Scheduler.py "${input[0]}" "${input[3]}" "${input[11]}" "${input[12]}" "${input[1]}" "${input[2]}" "${input[4]}" "${input[5]}" "${input[6]}" &
+#sleep 2
+ImagePicker/start.sh "${input[3]}" "${input[1]}" "${input[2]}" "${input[4]}" "${input[7]}" "${input[8]}" "${input[6]}" "${input[9]}" "${input[10]}"

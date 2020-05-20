@@ -20,9 +20,13 @@ void logging(const char *fmt, ...){
     fprintf( stderr, "\n" );
 }
 
-void plot_value(char path_rec[], char path_send[]){
+void plot_value(char path_send[], int gop_num, int FrameNo, int op){
+    char PNGNameRec[128];
+    sprintf(PNGNameRec, "%sframe-%06d-%06d.png", path_image_sender, gop_num, FrameNo);
+    if(op)
+        path_send = PNGNameRec;
     pthread_mutex_lock(&mtxplot);
-    fprintf(pipe_plot, "%s %s\n", path_rec, path_send);
+    fprintf(pipe_plot, "%s %s %d %d\n", PNGNameRec, path_send, gop_num, FrameNo);
     fflush(pipe_plot);
     pthread_mutex_unlock(&mtxplot);
 }
@@ -37,7 +41,7 @@ void savePNG(AVPacket* packet, char PNGName[]){
 
 int decode_to_png(AVFrame *pFrame, int FrameNo, int gop_num) {
     int result = 0;
-    char PNGName[128], PNGNameRec[128];
+    char PNGName[128];
     // codec per png
     AVCodecContext *pngContext = NULL;
     AVCodec *pngCodec = avcodec_find_encoder(AV_CODEC_ID_PNG);
@@ -79,10 +83,9 @@ int decode_to_png(AVFrame *pFrame, int FrameNo, int gop_num) {
             fprintf(stderr, "Error during encoding\n");
             exit(1);
         }
-        sprintf(PNGName, "%s-%06d-%06d.png", path_image, gop_num, FrameNo);
-        sprintf(PNGNameRec, "%s-%06d-%06d.png", path_image_sender, gop_num, FrameNo);
+        sprintf(PNGName, "%sframe-%06d-%06d.png", path_image, gop_num, FrameNo);
         savePNG(packet, PNGName);
-        //  plot_value(PNGName, PNGNameRec);
+        plot_value(PNGName, gop_num, FrameNo, 1);
         av_packet_unref(packet);
     }
     av_packet_free(&packet);
@@ -141,6 +144,8 @@ int decode_packet(AVPacket *pPacket, AVCodecContext *pCodecContext, int gop_num)
     //output("nome");
     if (response < 0) {
         logging("Error while sending a packet to the decoder: %s", av_err2str(response));
+        //send data to plot
+        plot_value("", gop_num, pCodecContext->frame_number, 0);
         return response;
     }
     while (avcodec_receive_frame(pCodecContext, pFrame) >= 0 ){
@@ -175,7 +180,7 @@ int create_image(gop_info* info){
     //printf("thread creati...\n");
     AVFormatContext *c = NULL;
     char GOPName[64];
-    sprintf(GOPName, "%s-%06d", path_file, info->gop_num);
+    sprintf(GOPName, "%sgop-%06d", path_file, info->gop_num);
     logging("decodificando il file %s\n", GOPName);
     result = avformat_open_input(&c, GOPName, NULL, NULL);
     if ( result != 0){
@@ -285,15 +290,10 @@ int create_image(gop_info* info){
         av_packet_unref(pPacket);
         
     }
-    
-    /*for (int i = 0; i < NUMDECODERTHR; i++){
-        pthread_mutex_lock(&mtx);
-        pushList(&testa, &coda, NULL, -1);
-        pthread_cond_signal(&cond);
-        pthread_mutex_unlock(&mtx);
-    }
-    //for (int i = 0; i < NUMDECODERTHR; i++)
-    //    SYSFREE(result,pthread_join(decode[i],NULL),0,"listener 1")*/
+    pthread_mutex_lock(&mtxplot);
+    fprintf(pipe_plot, "Fine\n");
+    fflush(pipe_plot);
+    pthread_mutex_unlock(&mtxplot);
     
     logging("releasing all the resources");
     

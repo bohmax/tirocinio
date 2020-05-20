@@ -252,7 +252,7 @@ void save_GOP(uint16_t *from, gop_info* info){
     int fix = 0;
     if (from_loopback && datalink_loopback == DLT_NULL)
         fix = (int) sizeof(struct ether_header) - 4;
-    sprintf(GOPName, "%s-%06d", path_file, info->gop_num);
+    sprintf(GOPName, "%sgop-%06d", path_file, info->gop_num);
     if (!(f = fopen(GOPName, "w")))
         printf("Error: %s\n", strerror(errno));
     rtp* el = find_hash(from);

@@ -179,7 +179,7 @@ int main(int argc, const char * argv[]) {
     }
     
     if(pcap_findalldevs(&alldevs, errbuf)==-1) exit(EXIT_FAILURE);
-    //set_pipe();
+    set_pipe();
     set_socket();
     set_signal();
     inizialize_mtx();
@@ -238,8 +238,8 @@ int main(int argc, const char * argv[]) {
     clock_t end = clock();
     close(fd);
     //chiudi plot
-    //fprintf(pipe_plot, "Esci\n");
-    //fclose(pipe_plot);
+    fprintf(pipe_plot, "Esci\n");
+    fclose(pipe_plot);
     printf("Tempo di esecuzione %f\n", (double)(end - begin) / CLOCKS_PER_SEC);
     return 0;
 }

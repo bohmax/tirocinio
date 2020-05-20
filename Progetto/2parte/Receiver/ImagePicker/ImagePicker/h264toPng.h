@@ -13,8 +13,8 @@
 
 void logging(const char *fmt, ...);
 
-//calcola PSNR e plotta il risultato
-void plot_value(char path_rec[], char path_send[]);
+//calcola PSNR e plotta il risultato, op indica se devo plottare un frame che sono stati decodifica (1) o meno (0)
+void plot_value(char path_send[], int gop_num, int FrameNo, int op);
 
 //salva un png in un file
 void savePNG(AVPacket* packet, char PNGName[]);

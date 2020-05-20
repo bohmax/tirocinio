@@ -70,6 +70,7 @@ def canale(queue, nome, gamma_e, beta_e, gamma_p, beta_p, delay, interface, ip, 
 
 
 if __name__ == "__main__":
+    print(sys.argv[1])
     process_list = []
     queue_list = []
     sender = Sender(None, sys.argv[2], ip, 0)  # non si spedirà mai con questo sender, usato solo per settare un pacchetto
@@ -86,16 +87,15 @@ if __name__ == "__main__":
     queue_stat = Queue()
     queue_gop = Queue()
     esci = False
-    #stat_process = Process(target=Statistiche.stat, args=((queue_stat, num_porte, port_stat), ))
+    stat_process = Process(target=Statistiche.stat, args=((queue_stat, num_porte, port_stat), ))
     #image_process = Process(target=Image_Handler.analyzer, args=((queue_gop, sys.argv[1], porta_pcap, gop_dir, img_dir), ))
     #image_process.start()
     #queue.get(block=False)
-    #stat_process.join()
-    #stat_process.start()
-    #try:
-    #    queue_stat.get()
-    #except KeyboardInterrupt:
-    #    exit(-1)
+    stat_process.start()
+    try:
+        queue_stat.get()
+    except KeyboardInterrupt:
+        exit(-1)
     packets = rdpcap(sys.argv[1], 1)
     timer = Timing()
     start = time.time()

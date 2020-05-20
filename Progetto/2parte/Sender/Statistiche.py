@@ -1,5 +1,7 @@
+import csv
 import socket
 from ctypes import *
+from datetime import datetime
 
 HOST = '127.0.0.1'
 
@@ -12,6 +14,8 @@ class Stat(Structure):  # Struttura che deve essere identica alla struttura send
 
 
 def stat(args):
+    data = datetime.now()
+    path = 'statistics/stat/' + str(data) + '.csv'
     queue = args[0]
     num_lst = args[1]  # per sapere il numero di sender
     port = args[2]
@@ -24,15 +28,19 @@ def stat(args):
         with conn:
             print('Connected by', addr)
             queue.put('conn')
-            while not esci:
-                try:
-                    data = conn.recv(dim*num_lst, socket.MSG_WAITALL)  # aspetto che vengano ricevuti tutti i byte dichiarati non solo il massimo
-                except KeyboardInterrupt:
-                    break
-                if not data:
-                    break
-                for i in range(num_lst):
-                    test = data[i*dim:(i+1)*dim]
-                    stat_ = Stat.from_buffer_copy(test)
-                    print("Received perd=%d, lungh=%d, delay=%d, ord=%d" % (stat_.perdita, stat_.lunghezza, stat_.delay, stat_.ordine))
+            with open(path, 'w+') as f:
+                writer = csv.writer(f)
+                writer.writerow(["#Perdite", "Lunghezza perdite", "Delay", "Fuori ordine"])
+                while not esci:
+                    try:
+                        data = conn.recv(dim*num_lst, socket.MSG_WAITALL)  # aspetto che vengano ricevuti tutti i byte dichiarati non solo il massimo
+                    except KeyboardInterrupt:
+                        break
+                    if not data:
+                        break
+                    for i in range(num_lst):
+                        test = data[i*dim:(i+1)*dim]
+                        stat_ = Stat.from_buffer_copy(test)
+                        writer.writerow([stat_.perdita, stat_.lunghezza, stat_.delay, stat_.ordine])
+                        #print("Received perd=%d, lungh=%d, delay=%d, ord=%d" % (stat_.perdita, stat_.lunghezza, stat_.delay, stat_.ordine))
         print("Esco dalle statistiche")

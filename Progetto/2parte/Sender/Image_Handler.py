@@ -85,8 +85,8 @@ def analyzer(args):
                     if start_bit == 128:
                         if nal_type == 5:
                             if len(payload) != 0:
-                                path = path_gop + '-' + str(num_gop).zfill(6)
-                                img_path = path_img + "-" + str(num_gop).zfill(6) + "-%06d.png"
+                                path = path_gop + 'gop-' + str(num_gop).zfill(6)
+                                img_path = path_img + "frame-" + str(num_gop).zfill(6) + "-%06d.png"
                                 f = open(path, "wb")
                                 f.write(payload)
                                 f.close()

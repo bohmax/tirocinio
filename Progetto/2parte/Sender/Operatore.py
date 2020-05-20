@@ -45,7 +45,7 @@ class Operatore:
         #    return
         #if rng <= self._evento[index]:
         if rng <= 0.1: #delay
-            self._delay_list.append((pkt, time.time()+random.random(0, self._delay)))
+            self._delay_list.append((pkt, time.time()+random.uniform(0, self._delay)))
         else:
             socket.send(pkt)
         #else:

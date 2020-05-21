@@ -38,6 +38,8 @@ int set_stat_sock(){
     }
     if (tentativi == 5 && !esci){
         printf("Impossibile connettersi al server, chiudo\n");
+        fprintf(pipe_plot, "Esci\n");
+        fclose(pipe_plot);
         exit(-1);
     } else
         printf("connected to the server..\n");

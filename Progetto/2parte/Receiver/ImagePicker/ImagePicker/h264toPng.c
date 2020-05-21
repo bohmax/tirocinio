@@ -20,13 +20,13 @@ void logging(const char *fmt, ...){
     fprintf( stderr, "\n" );
 }
 
-void plot_value(char path_send[], int gop_num, int FrameNo, int op){
-    char PNGNameRec[128];
-    sprintf(PNGNameRec, "%sframe-%06d-%06d.png", path_image_sender, gop_num, FrameNo);
+void plot_value(char path_r[], int gop_num, int FrameNo, int op){
+    char PNGNameSender[128];
+    sprintf(PNGNameSender, "%sframe-%06d-%06d.png", path_image_sender, gop_num, FrameNo);
     if(op)
-        path_send = PNGNameRec;
+        path_r = PNGNameSender;
     pthread_mutex_lock(&mtxplot);
-    fprintf(pipe_plot, "%s %s %d %d\n", PNGNameRec, path_send, gop_num, FrameNo);
+    fprintf(pipe_plot, "%s %s %d %d\n", path_r, PNGNameSender, gop_num, FrameNo);
     fflush(pipe_plot);
     pthread_mutex_unlock(&mtxplot);
 }
@@ -85,7 +85,7 @@ int decode_to_png(AVFrame *pFrame, int FrameNo, int gop_num) {
         }
         sprintf(PNGName, "%sframe-%06d-%06d.png", path_image, gop_num, FrameNo);
         savePNG(packet, PNGName);
-        plot_value(PNGName, gop_num, FrameNo, 1);
+        plot_value(PNGName, gop_num, FrameNo, 0);
         av_packet_unref(packet);
     }
     av_packet_free(&packet);
@@ -145,7 +145,7 @@ int decode_packet(AVPacket *pPacket, AVCodecContext *pCodecContext, int gop_num)
     if (response < 0) {
         logging("Error while sending a packet to the decoder: %s", av_err2str(response));
         //send data to plot
-        plot_value("", gop_num, pCodecContext->frame_number, 0);
+        plot_value("", gop_num, pCodecContext->frame_number, 1);
         return response;
     }
     while (avcodec_receive_frame(pCodecContext, pFrame) >= 0 ){

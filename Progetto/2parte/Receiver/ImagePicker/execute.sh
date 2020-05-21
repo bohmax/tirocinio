@@ -1,9 +1,4 @@
 #!/bin/bash
-function callbac() { # per killare tutti i processi
-	arg1=$1
-	kill -2 "$arg1"
-}
-
 helper="NAME
 	Drones Streaming - Esecuzione del programma del tirocinio
 SYNOPSIS
@@ -72,8 +67,6 @@ if [ ! -f ImagePicker/client ]; then
     fi
     cd .. 
 fi
-
-trap 'func $clientpid' SIGINT
 
 python3 Sender/Scheduler.py "${input[0]}" "${input[3]}" "${input[11]}" "${input[12]}" "${input[1]}" "${input[2]}" "${input[4]}" "${input[5]}" "${input[6]}" "${input[13]}" "${input[14]}" "${input[15]}" "${input[16]}" "${input[17]}"&
 clientpid+="$! " 

@@ -14,7 +14,7 @@ data = datetime.now()
 path = 'statistics/plot' + str(data) + '.csv'
 matplotlib.use('Qt5Agg')
 fig, ax = plt.subplots()
-plt.ylabel("Quality")
+plt.ylabel("Quality Db")
 plt.xlabel("Frame")
 plt.title("Grafico qualità streaming")
 plt.ion()
@@ -26,7 +26,7 @@ plt.xticks(x_vals, my_xticks)
 dim, max, num_frame = 0, 1.0, 0  # dimensione array da plattare, max è il valore massimo da plottare e numero tatale dei frame attualmente inseriti
 distance = 0  # distanza dall'ultimo gop utilizzato
 ax.set_xlim(-0.5, 1.5)
-ax.set_ylim(0, 1.0)
+ax.set_ylim(0, 61)
 move, esci = True, False
 last_image = ""  # ultima immagine utile, da confrontare in caso l'ultima immagina non sia decodificata
 current_gop = 0  # ultimo gop utilizzato per l'ultima immagine
@@ -40,7 +40,7 @@ def sync_gop():
     global current_gop, not_in_current_gop, last_image
     while not_in_current_gop:
         for i in not_in_current_gop[:]:
-            string, other = i
+            string, *other = i
             if string == "Fine":
                 if other == current_gop:
                     current_gop += 1
@@ -63,11 +63,12 @@ def psnr_calc(im1, im2, gop, frame):
     img1 = cv2.imread(im1)  # im1 è l'immagine lato receiver
     img2 = cv2.imread(im2)
     psnr = cv2.PSNR(img1, img2)
+    if psnr > 60:
+        psnr = 60
     num_frame += 1
-    print(psnr)
     x_vals.append(num_frame)
     y_vals.append(psnr)
-    titolo = 'GOP ' + str(gop) + '#frame ' + frame
+    titolo = 'G ' + str(gop) + ' #F ' + frame
     my_xticks.append(titolo)
     dim += 1
     max = dim
@@ -125,16 +126,17 @@ def get_input():
 
 def init():
     ax.set_xlim(-0.5, 1.5)
-    ax.set_ylim(0, 1)
+    ax.set_ylim(0, 61)
     ln.set_data([], [])
     return ln,
 
 
 def animate(i):
-    if move:
-        ax.set_xlim(max - 1.5, max + 0.5)
+    global max, x_vals, y_vals
     ln.set_data(x_vals[:dim], y_vals[:dim])
     plt.xticks(x_vals[:dim], my_xticks[:dim])
+    if move:
+        ax.set_xlim(max - 1.5, max + 0.5)
     return ln,
 
 

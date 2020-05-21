@@ -35,19 +35,26 @@ class Operatore:
     def send(self, socket, pkt, indice):
         #index = indice % 1000
         rng = random.random()
-        for i in reversed(self._delay_list):
+        for i in self._delay_list:
             el, times = i
-            if times > time.time():
-                socket.send(el)
+            if time.time() > times:
+                try:
+                    socket.send(el)
+                except KeyboardInterrupt:
+                    pass
                 self._delay_list.remove(i)
         #if self._counter > 0:
         #    self._counter -= 1
         #    return
         #if rng <= self._evento[index]:
         if rng <= 0.1: #delay
-            self._delay_list.append((pkt, time.time()+random.uniform(0, self._delay)))
+            val = random.uniform(0, self._delay)
+            self._delay_list.append((pkt, time.time()+val))
         else:
-            socket.send(pkt)
+            try:
+                socket.send(pkt)
+            except KeyboardInterrupt:
+                pass
         #else:
         #    self._counter = math.ceil(self._perdita[index])
         #    self._pkt_losted.append(indice)

@@ -70,7 +70,6 @@ def canale(queue, nome, gamma_e, beta_e, gamma_p, beta_p, delay, interface, ip, 
 
 
 if __name__ == "__main__":
-    print(sys.argv[1])
     process_list = []
     queue_list = []
     sender = Sender(None, sys.argv[2], ip, 0)  # non si spedirà mai con questo sender, usato solo per settare un pacchetto

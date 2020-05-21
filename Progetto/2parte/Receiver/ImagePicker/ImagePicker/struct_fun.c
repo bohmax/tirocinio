@@ -34,7 +34,7 @@ gop_info* setElGOP(int gop_num, int start){
 }
 
 
-gop_info* setNextElGOP(int gop_num, int start, int last_frame_gop, int start_new_gop, int new_metadata){
+gop_info* setNextElGOP(int gop_num, int start, int last_frame_gop, int start_new_gop, int new_metadata, int accept){
     gop_info* new = malloc(sizeof(gop_info));
     memset(new, '\0', sizeof(gop_info));
     new->gop_over = -1;

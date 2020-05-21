@@ -63,7 +63,7 @@ void* segnali(void *arg){
 }
 
 void* statThread(void* arg){
-    int i = 0, ris, size, lenght;
+    int i = 0, size, lenght;
     struct timespec ts = { 0, stat_interv*1000};
     int* index = malloc(sizeof(int)*num_list); //indice dei vari array delle stat
     uint16_t** copy_array = malloc(sizeof(uint16_t*)*num_list);
@@ -80,7 +80,7 @@ void* statThread(void* arg){
     memset(spedisci, 0, sizeof(send_stat)*num_list);
     int sockfd = set_stat_sock(); //in utility.c
     while (!esci) {
-        ris = nanosleep(&ts, NULL);
+        nanosleep(&ts, NULL);
         for (i = 0; i<num_list; i++) {
             pthread_mutex_lock(&mtxstat[i]);
             stat_t* stat = &statistiche[i];
@@ -167,6 +167,10 @@ void* ReaderPacket(void* arg){
         pthread_mutex_unlock(&mtx_ord);
         if (el->start_seq != -1) {
             usleep(LFINESTRA); //aspetta altri pacchetti per 200ms
+            pthread_mutex_lock(&mtx_info);
+            if(info)
+                info->accept_packet = info->start_seq; //aspetta e aggiorna il last gop, da questo momento non saranno più accettati numeri di sequenza del gop precedente
+            pthread_mutex_unlock(&mtx_info);
             *from = el->metadata_start;
             save_GOP(from, el);
             pthread_mutex_lock(&mtx_dec);
@@ -218,7 +222,7 @@ void* GOPThread(void* arg){
                 pthread_mutex_lock(&mtx_info);
                 if (info) {
                     copy = info;
-                    info = setNextElGOP(info->gop_num+1, ret, info->gop_over, info->end_seq, info->next_metadata);
+                    info = setNextElGOP(info->gop_num+1, ret, info->gop_over, info->end_seq, info->next_metadata, info->start_seq);
                     printf("start new gop [%d]\n", info->start_seq);
                 }
                 pthread_mutex_unlock(&mtx_info);

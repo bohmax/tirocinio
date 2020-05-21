@@ -33,6 +33,10 @@ do
 	fi
 done
 
+if [ "${BASH_SOURCE[0]}" = "./start.sh" ]; then
+	cd ..
+fi
+
 GSTREAM_LOC='gst-launch-1.0 '
 PIPELINE='-v udpsrc port='"$4"' caps = "application/x-rtp, media=(string)video, clock-rate=(int)90000, encoding-name=(string)H264, payload=(int)96" ! rtpjitterbuffer ! rtph264depay ! decodebin ! videoconvert ! '
 SCREEN='xvimagesink'
@@ -43,5 +47,5 @@ fi
 
 eval $GSTREAM_LOC $PIPELINE $SCREEN &
 PID="$!"
-./client "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9"
+ImagePicker/client "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9"
 wait $PID

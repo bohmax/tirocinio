@@ -46,7 +46,7 @@ long* delay_calibrator;
 int num_list = 1, from_port = 5000, stat_port = DPORT, stat_interv = LFINESTRA, num_decoder = NUMDECODERTHR;
 
 void set_pipe(){
-    pipe_plot = popen("python3 ~/PycharmProjects/plotting/plot.py", "w");
+    pipe_plot = popen("python3 ImagePicker/plot.py", "w");
     if (pipe_plot == NULL) {
         printf("popen error\n");
         exit(1);

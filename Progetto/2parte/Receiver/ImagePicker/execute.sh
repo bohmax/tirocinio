@@ -1,4 +1,9 @@
 #!/bin/bash
+function callbac() { # per killare tutti i processi
+	arg1=$1
+	kill -2 "$arg1"
+}
+
 helper="NAME
 	Drones Streaming - Esecuzione del programma del tirocinio
 SYNOPSIS
@@ -8,6 +13,11 @@ DESCRIPTION
 AUTHOR
 	Written by Massimo Puddu
 	"
+if [[ $UID != 0 ]]; then
+    echo "Please run this script with sudo"
+    echo "sudo $0 $*"
+    exit 1
+fi
 if [ "$#" -ne 1 ]; then
     echo "$helper"
     exit 1
@@ -27,9 +37,9 @@ input[11]=$(awk '/^ip/{print $3}' "$1") #ip su cui inviare i pacchetti dal sende
 input[12]=$(awk '/^port_rtp_pcap/{print $3}' "$1") #porta che contiente in flusso rtp del file pcap
 input[13]=$(awk '/^gamma_evento/{print $3}' "$1") #valore di gamma che mi indica in quale intervallo iniziare l'evento di perdita
 input[14]=$(awk '/^beta_evento/{print $3}' "$1") #valore di beta che mi indica in quale intervallo iniziare l'evento di perdita
-input[13]=$(awk '/^gamma_perdita/{print $3}' "$1") #valore di gamma che mi indica quanti pacchetti perdere
-input[14]=$(awk '/^beta_perdita/{print $3}' "$1") #valore di beta che mi indica quanti pacchetti perdere
-input[15]=$(awk '/^delay/{print $3}' "$1") #dalay massimo con cui ritardare un pacchetto
+input[15]=$(awk '/^gamma_perdita/{print $3}' "$1") #valore di gamma che mi indica quanti pacchetti perdere
+input[16]=$(awk '/^beta_perdita/{print $3}' "$1") #valore di beta che mi indica quanti pacchetti perdere
+input[17]=$(awk '/^delay/{print $3}' "$1") #dalay massimo con cui ritardare un pacchetto
 
 for i in "${input[@]}"
 do
@@ -52,6 +62,23 @@ do
 	[[ $last_char != "/" ]] && input[i]="${input[i]}/";
 done
 
-#python3 Scheduler.py "${input[0]}" "${input[3]}" "${input[11]}" "${input[12]}" "${input[1]}" "${input[2]}" "${input[4]}" "${input[5]}" "${input[6]}" &
-#sleep 2
-ImagePicker/start.sh "${input[3]}" "${input[1]}" "${input[2]}" "${input[4]}" "${input[7]}" "${input[8]}" "${input[6]}" "${input[9]}" "${input[10]}"
+if [ ! -f ImagePicker/client ]; then
+    cd ImagePicker
+    make
+    if [ ! $? -eq 0 ]; then
+    	cd ..
+    	echo "Makefail failed try to run it from it s folder and check if ffmpeg is linked with the path in makefile"
+    	exit -1
+    fi
+    cd .. 
+fi
+
+trap 'func $clientpid' SIGINT
+
+python3 Sender/Scheduler.py "${input[0]}" "${input[3]}" "${input[11]}" "${input[12]}" "${input[1]}" "${input[2]}" "${input[4]}" "${input[5]}" "${input[6]}" "${input[13]}" "${input[14]}" "${input[15]}" "${input[16]}" "${input[17]}"&
+clientpid+="$! " 
+sleep 2
+ImagePicker/start.sh "${input[3]}" "${input[1]}" "${input[2]}" "${input[4]}" "${input[7]}" "${input[8]}" "${input[6]}" "${input[9]}" "${input[10]}" &
+clientpid+="$! " 
+wait $clientpid
+

@@ -25,7 +25,7 @@ void freeRTP(void** el); //list è un elemento occhio al nome
 gop_info* setElGOP(int gop_num, int start);
 
 //per inizializzare il prossimo gop
-gop_info* setNextElGOP(int gop_num, int start, int last_frame_gop, int start_new_gop, int new_metadata);
+gop_info* setNextElGOP(int gop_num, int start, int last_frame_gop, int start_new_gop, int new_metadata, int accept);
 
 void freeGOP(void** el);
 

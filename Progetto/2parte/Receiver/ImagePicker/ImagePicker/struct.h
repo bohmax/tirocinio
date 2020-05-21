@@ -28,6 +28,7 @@ typedef struct el_gop {
     int start_seq; //inizio del gop da analizzare
     int end_seq; //fine gop
     int num_frame;
+    int accept_packet; // contiene il numero di sequenza con cui si decide se analizzare un pacchetto o meno
     int gop_over; //1 se non ci sono ulteriori modifiche da fare al gop, 0 altrimenti
     int end_last_gop; // quando finisce il gop precedente, utili per avere più informazioni quando se ne inizia un altro
     int accepted28; // mi indica da che numero di sequenza accettare i nal type 28

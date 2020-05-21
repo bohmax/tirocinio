@@ -197,9 +197,9 @@ int workOnPacket(rtp* el, int stat_index){
     //unsigned int forbidden = rtpdata[0] & 0x80 >> 7;
     //unsigned int nri = rtpdata[0] & 0x60 >> 5;
     unsigned int fragment_type = rtpdata[0] & 0x1F;  // il valore è 28
-    
+
     pthread_mutex_lock(&mtx_info);
-    if (info && seq <= info->end_last_gop)
+    if (info && seq <= info->accept_packet)
         ris = -1;
     pthread_mutex_unlock(&mtx_info);
     

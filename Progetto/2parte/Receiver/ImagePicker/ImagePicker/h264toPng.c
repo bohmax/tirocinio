@@ -189,7 +189,7 @@ int create_image(gop_info* info){
         return -1;
     }
     
-    printf("format %s, duration %lld us, bit_rate %lld", c->iformat->name, c->duration, c->bit_rate);
+    printf("format %s, duration %lld us, bit_rate %lld\n", c->iformat->name, c->duration, c->bit_rate);
     
     if (avformat_find_stream_info(c,  NULL) < 0) {
         logging("ERROR could not get the stream info");
@@ -291,7 +291,7 @@ int create_image(gop_info* info){
         
     }
     pthread_mutex_lock(&mtxplot);
-    fprintf(pipe_plot, "Fine\n");
+    fprintf(pipe_plot, "Fine %d\n", info->gop_num);
     fflush(pipe_plot);
     pthread_mutex_unlock(&mtxplot);
     

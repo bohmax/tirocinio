@@ -130,13 +130,13 @@ void inizialize_mtx(){
 }
 
 void set_socket(){
-    fd = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    fd = socket(PF_INET, SOCK_DGRAM, 0);
     if(fd<0){
         perror("cannot open socket");
         exit(-1);
     }
     
-    bzero(&servaddr,sizeof(servaddr));
+    bzero(&servaddr, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
     servaddr.sin_addr.s_addr = inet_addr(HOSTNAME);
     servaddr.sin_port = htons(video_port);

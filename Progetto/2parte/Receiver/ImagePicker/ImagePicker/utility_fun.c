@@ -64,21 +64,22 @@ uint16_t stat_lunghezza(uint16_t arr[], int index){
     return 0;
 }
 
-uint16_t stat_out_of_order(uint16_t ord[],uint16_t not_ord[], int dim){
+uint16_t stat_out_of_order(uint16_t ord[], uint16_t not_ord[], int dim){
     int i = 0, j = 0;
     uint16_t out = 0, prec, curr; //prec contiene l'ids corrente
     for (i = 0; i < dim; i++) {
         if (ord[i] != not_ord[i]) {
             out++;
             prec = not_ord[i];
-            not_ord[i] = ord[i];
             j = i + 1;
             while (not_ord[j] != ord[i]) { // shift a sinistra finchè non si trova l'elemento corrispondente
                 curr = not_ord[j];
                 not_ord[j] = prec;
-                prec = curr;
                 j++;
+                prec = curr;
             }
+            not_ord[i] = ord[i];
+            not_ord[j] = prec;
         }
     }
     return out;

@@ -53,7 +53,7 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "lo0 127.0.0.1 1 5000 9998 10001 /Users/maxuel/Desktop/gopfolder_r/ /Users/maxuel/Desktop/imgfolder_r/ /Users/maxuel/Desktop/imgfolder/ 200000 1"
+            argument = "lo0 127.0.0.1 1 5000 9998 9999 /Users/maxuel/Desktop/gopfolder_r/ /Users/maxuel/Desktop/imgfolder_r/ /Users/maxuel/Desktop/imgfolder/ 200000 1"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument

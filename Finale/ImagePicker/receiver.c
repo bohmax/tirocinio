@@ -42,43 +42,17 @@ void add(string* dst, u_char src[], int src_len){
 
 void send_packet(rtp* el){
     struct udphdr* udp = NULL;
-    if (!from_loopback) {
-        udp = (struct udphdr*) (el->packet + to_udphdr);
-        udp->uh_dport = htons(video_port);
-        udp->uh_sum = 0;
-        if (datalink_loopback == DLT_NULL) {
-            int new_len = to_iphdr - 4;
-            u_char* buff = el->packet + new_len;
-            loopbackstarter(buff);
-            if (pcap_sendpacket(loopback, buff, el->size - new_len) != 0)
-                fprintf(stderr,"\nError sending the packet: %s\n", pcap_geterr(loopback));
-        }
-        else{ //se devo spedire un altro pacchetto ethernet devo azzerarlo
-            struct ether_header* eth = (struct ether_header *) el->packet;
-            for (int i=0; i < MAC_LENGHT; i++) {
-                eth->ether_dhost[i] = MAC_ADDR;
-                eth->ether_shost[i] = MAC_ADDR;
-            }
-            if (pcap_sendpacket(loopback, el->packet, el->size) != 0)
-                fprintf(stderr,"\nError sending the packet: %s\n", pcap_geterr(loopback));
-        }
-    }
-    else{
-        u_char* send = NULL;
-        int fix = 0, new_size = 0;
-        if (datalink_loopback == DLT_NULL)
-            fix = sizeof(struct ether_header) - 4;
-        udp = (struct udphdr*) (el->packet + to_udphdr - fix);
-        udp->uh_dport = htons(video_port);
-        udp->uh_sum = 0;
-        send = (el->packet + to_rtphdr - fix);
-        new_size = el->size - to_rtphdr + fix;
-        if (sendto(fd, send, new_size, 0, (struct sockaddr*)&servaddr, sizeof(servaddr)) < 0){
-            perror("cannot send message");
-        }
-        //if (pcap_sendpacket(loopback, el->packet, el->size) != 0) //si potrebbe usare se non fosse per linux
-        //    fprintf(stderr,"\nError sending the packet: %s\n", pcap_geterr(loopback));
-    }
+    u_char* send = NULL;
+    int fix = 0, new_size = 0;
+    if (from_loopback && datalink_loopback == DLT_NULL)
+        fix = sizeof(struct ether_header) - 4;
+    udp = (struct udphdr*) (el->packet + to_udphdr - fix);
+    udp->uh_dport = htons(video_port);
+    udp->uh_sum = 0;
+    send = (el->packet + to_rtphdr - fix);
+    new_size = el->size - to_rtphdr + fix;
+    if (sendto(fd, send, new_size, 0, (struct sockaddr*)&servaddr, sizeof(servaddr)) < 0)
+        perror("cannot send packet");
     el->sent = 1;
 }
 

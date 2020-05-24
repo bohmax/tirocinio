@@ -67,7 +67,7 @@ void* statThread(void* arg){
     struct timespec ts = { 0, stat_interv*1000};
     int* index = malloc(sizeof(int)*num_list); //indice dei vari array delle stat
     uint16_t** ids_copy = malloc(sizeof(uint16_t*)*num_list); //copia il campo ids dell'array
-    uint16_t* ids_copy_temp = malloc(sizeof(uint16_t*)*DIMARRSTAT); //array temporaneo di lavoro che copia di nuovo gli ids
+    uint16_t* ids_copy_temp = malloc(sizeof(uint16_t)*DIMARRSTAT); //array temporaneo di lavoro che copia di nuovo gli ids
     uint16_t* current = malloc(sizeof(uint16_t)*num_list); //viene usato per calcolare out of ord
     send_stat* spedisci = malloc(sizeof(send_stat)*num_list);
     for(int i = 0; i<num_list;i++){
@@ -95,7 +95,6 @@ void* statThread(void* arg){
             stat->index = 0;
             stat->delay = 0;
             stat->min = -1;
-            stat->delay = 0;
             delay_calibrator[i] = -1;
             pthread_mutex_unlock(&mtxstat[i]);
         }
@@ -103,12 +102,16 @@ void* statThread(void* arg){
         for (i = 0; i < num_list; i++) {
             if(index[i] > 0){
                 spedisci[i].delay = spedisci[i].delay/index[i];
-                memcpy(ids_copy_temp, ids_copy[i], index[i]); //copia array
+                for(int j = 0; j < index[i]; j++)
+                    ids_copy_temp[j] = ids_copy[i][j]; //copia array
                 qsort(ids_copy[i], index[i], sizeof(uint16_t), cmpfunc); // ordinalo
                 //calcolo out of order
                 spedisci[i].ordine = stat_out_of_order(ids_copy[i], ids_copy_temp, index[i]);
                 //calcolo lunghezza
-                spedisci[i].lunghezza = stat_lunghezza(ids_copy[i],index[i]);
+                if (ids_copy[i]==0) {
+                    printf("stop");
+                }
+                spedisci[i].lunghezza = stat_lunghezza(ids_copy[i], index[i]);
                 size = index[i] - 1; // numero di elementi nell'array
                 lenght = ids_copy[i][size] - ids_copy[i][0]; // valore massimo meno minimo
                 spedisci[i].perdita = size > lenght ? size - lenght : lenght - size;

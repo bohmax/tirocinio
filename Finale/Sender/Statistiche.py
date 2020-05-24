@@ -10,7 +10,8 @@ class Stat(Structure):  # Struttura che deve essere identica alla struttura send
     _fields_ = [("perdita", c_uint16),
                 ("lunghezza", c_uint16),
                 ("delay", c_int),
-                ("ordine", c_uint16)]
+                ("ordine", c_uint16),
+                ("num_of_pkt", c_int)]
 
 
 def stat(args):
@@ -30,7 +31,7 @@ def stat(args):
             queue.put('conn')
             with open(path, 'w+') as f:
                 writer = csv.writer(f)
-                writer.writerow(["#Perdite", "Lunghezza perdite", "Delay", "Fuori ordine"])
+                writer.writerow(["#Perdite", "Lunghezza perdite", "Delay", "Fuori ordine", "Number of packets"])
                 while not esci:
                     try:
                         data = conn.recv(dim*num_lst, socket.MSG_WAITALL)  # aspetto che vengano ricevuti tutti i byte dichiarati non solo il massimo
@@ -41,6 +42,6 @@ def stat(args):
                     for i in range(num_lst):
                         test = data[i*dim:(i+1)*dim]
                         stat_ = Stat.from_buffer_copy(test)
-                        writer.writerow([stat_.perdita, stat_.lunghezza, stat_.delay, stat_.ordine])
+                        writer.writerow([stat_.perdita, stat_.lunghezza, stat_.delay, stat_.ordine, stat_.num_of_pkt])
                         #print("Received perd=%d, lungh=%d, delay=%d, ord=%d" % (stat_.perdita, stat_.lunghezza, stat_.delay, stat_.ordine))
         print("Esco dalle statistiche")

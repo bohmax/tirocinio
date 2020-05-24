@@ -19,23 +19,23 @@ class Operatore:
     @param loss: probabilità con la quale i pacchetti vengono droppati per motivi legati alla rete
     @param delay: ritardi tra un pacchetto e l'altro
     """
-    def __init__(self, name, gamma_e, beta_e, gamma_p, beta_p, delay):
+    def __init__(self, name, gamma_e, beta_e, gamma_p, beta_p, gamma_d, beta_d):
         self._name = name
         #self._loss = loss
         self._gamme_e = gamma_e
         self._betta_e = beta_e
         self._gamme_p = gamma_p
         self._beta_p = beta_p
-        self._delay = delay
+        self._delay = gamma.rvs(gamma_d, scale=1 / beta_d, size=1000)
         self._evento = gamma.rvs(gamma_e, scale=1 / beta_e, size=1000)
         self._perdita = gamma.rvs(gamma_p, scale=1 / beta_p, size=1000)
         self._counter = 0
         self._delay_list = []  # lista in cui verrano inseriti i pacchetti da non spedire subito
 
     def send(self, socket, pkt, indice):
-        #index = indice % 1000
+        index = indice % 1000
         rng = random.random()
-        for i in self._delay_list:
+        for i in reversed(self._delay_list):
             el, times = i
             if time.time() > times:
                 try:
@@ -48,8 +48,8 @@ class Operatore:
         #    return
         #if rng <= self._evento[index]:
         if rng <= 0.1: #delay
-            val = random.uniform(0, self._delay)
-            self._delay_list.append((pkt, time.time()+val))
+            delay = self._delay[index]
+            self._delay_list.append((pkt, time.time()+delay))
         else:
             try:
                 socket.send(pkt)

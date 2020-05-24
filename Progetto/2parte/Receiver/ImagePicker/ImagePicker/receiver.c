@@ -44,7 +44,7 @@ void send_packet(rtp* el){
     struct udphdr* udp = NULL;
     if (!from_loopback) {
         udp = (struct udphdr*) (el->packet + to_udphdr);
-        udp->uh_dport = htons(stat_port);
+        udp->uh_dport = htons(video_port);
         udp->uh_sum = 0;
         if (datalink_loopback == DLT_NULL) {
             int new_len = to_iphdr - 4;
@@ -69,7 +69,7 @@ void send_packet(rtp* el){
         if (datalink_loopback == DLT_NULL)
             fix = sizeof(struct ether_header) - 4;
         udp = (struct udphdr*) (el->packet + to_udphdr - fix);
-        udp->uh_dport = htons(stat_port);
+        udp->uh_dport = htons(video_port);
         udp->uh_sum = 0;
         send = (el->packet + to_rtphdr - fix);
         new_size = el->size - to_rtphdr + fix;

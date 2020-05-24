@@ -66,17 +66,19 @@ void* statThread(void* arg){
     int i = 0, size, lenght;
     struct timespec ts = { 0, stat_interv*1000};
     int* index = malloc(sizeof(int)*num_list); //indice dei vari array delle stat
-    uint16_t** copy_array = malloc(sizeof(uint16_t*)*num_list);
+    uint16_t** ids_copy = malloc(sizeof(uint16_t*)*num_list); //copia il campo ids dell'array
+    uint16_t* ids_copy_temp = malloc(sizeof(uint16_t*)*DIMARRSTAT); //array temporaneo di lavoro che copia di nuovo gli ids
     uint16_t* current = malloc(sizeof(uint16_t)*num_list); //viene usato per calcolare out of ord
     send_stat* spedisci = malloc(sizeof(send_stat)*num_list);
     for(int i = 0; i<num_list;i++){
         index[i] = 0;
         current[i] = 0;
-        copy_array[i] = malloc(sizeof(uint16_t)*DIMARRSTAT);
+        ids_copy[i] = malloc(sizeof(uint16_t)*DIMARRSTAT);
         for (int j = 0; j < DIMARRSTAT; j++)
-            copy_array[i][j] = 0;
+            ids_copy[i][j] = 0;
         memset(&spedisci[i], 0, sizeof(send_stat));
     }
+    memset(ids_copy_temp, 0, sizeof(uint16_t)*DIMARRSTAT);
     memset(spedisci, 0, sizeof(send_stat)*num_list);
     int sockfd = set_stat_sock(); //in utility.c
     while (!esci) {
@@ -84,9 +86,9 @@ void* statThread(void* arg){
         for (i = 0; i<num_list; i++) {
             pthread_mutex_lock(&mtxstat[i]);
             stat_t* stat = &statistiche[i];
-            index[i] = stat->index;
+            index[i] = stat->index; // contiene il numero di pacchetti dell'i-esimo canale
             for(int x=0; x<stat->index; x++)
-                copy_array[i][x] = stat->ids[x];
+                ids_copy[i][x] = stat->ids[x];
             spedisci[i].delay = stat->delay;
             current[i] = stat->min;
             stat->id_accepted = stat->max;
@@ -101,19 +103,23 @@ void* statThread(void* arg){
         for (i = 0; i < num_list; i++) {
             if(index[i] > 0){
                 spedisci[i].delay = spedisci[i].delay/index[i];
+                memcpy(ids_copy_temp, ids_copy[i], index[i]); //copia array
+                qsort(ids_copy[i], index[i], sizeof(uint16_t), cmpfunc); // ordinalo
                 //calcolo out of order
-                spedisci[i].ordine = stat_out_of_order(copy_array[i], current[i], index[i]);
+                spedisci[i].ordine = stat_out_of_order(ids_copy[i], ids_copy_temp, index[i]);
                 //calcolo lunghezza
-                spedisci[i].lunghezza = stat_lunghezza(copy_array[i],index[i]);
-                size = index[i] - 1;
-                lenght = copy_array[i][size] - copy_array[i][0];
+                spedisci[i].lunghezza = stat_lunghezza(ids_copy[i],index[i]);
+                size = index[i] - 1; // numero di elementi nell'array
+                lenght = ids_copy[i][size] - ids_copy[i][0]; // valore massimo meno minimo
                 spedisci[i].perdita = size > lenght ? size - lenght : lenght - size;
+                spedisci[i].number_of_pkt = index[i];
             }
             else {
                 spedisci[i].perdita = -1;
                 spedisci[i].delay = -1;
                 spedisci[i].lunghezza = -1;
                 spedisci[i].ordine = -1;
+                spedisci[i].number_of_pkt = 0;
             }
         }
         // spedisci al server
@@ -124,8 +130,9 @@ void* statThread(void* arg){
         close(sockfd);
     free(index);
     for(int i = 0; i<num_list;i++)
-        free(copy_array[i]);
-    free(copy_array);
+        free(ids_copy[i]);
+    free(ids_copy);
+    free(ids_copy_temp);
     free(current);
     free(spedisci);
     printf("Thread statistiche chiude\n");

@@ -21,7 +21,7 @@ int cmpfunc (const void * a, const void * b);
 uint16_t stat_lunghezza(uint16_t arr[], int index);
 
 //per calolare la statistica sul out of order
-uint16_t stat_out_of_order(uint16_t arr[], uint16_t current, int index);
+uint16_t stat_out_of_order(uint16_t ord[],uint16_t not_ord[], int dim);
 
 // Function designed for chat between client and server.
 void send_to_server(int sockfd, send_stat spedisci[]);

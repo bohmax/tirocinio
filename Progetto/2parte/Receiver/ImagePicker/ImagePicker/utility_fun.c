@@ -23,7 +23,7 @@ int set_stat_sock(){
     bzero(&servaddr, sizeof(servaddr));
     // assign IP, PORT
     servaddr.sin_family = AF_INET;
-    servaddr.sin_addr.s_addr = inet_addr(HOSTNAME);
+    servaddr.sin_addr.s_addr = inet_addr(ip_sender);
     servaddr.sin_port = htons(stat_port);
     // connect the client socket to server socket
     while (tentativi < 5 && !esci) {
@@ -53,7 +53,6 @@ int cmpfunc (const void * a, const void * b){
 
 uint16_t stat_lunghezza(uint16_t arr[], int index){
     int num_lost, num_buchi = 0, tot = 0, j;
-    qsort(arr, index, sizeof(uint16_t), cmpfunc);
     for (j = 1; j < index; j++) {
         num_lost = arr[j] - arr[j-1] - 1;
         if (num_lost > 0)
@@ -65,14 +64,22 @@ uint16_t stat_lunghezza(uint16_t arr[], int index){
     return 0;
 }
 
-uint16_t stat_out_of_order(uint16_t arr[], uint16_t current, int index){
-    int j = 0;
-    uint16_t out = 0;
-    for (j = 0; j < index; j++) {
-        if (current != arr[j]) {
+uint16_t stat_out_of_order(uint16_t ord[],uint16_t not_ord[], int dim){
+    int i = 0, j = 0;
+    uint16_t out = 0, prec, curr; //prec contiene l'ids corrente
+    for (i = 0; i < dim; i++) {
+        if (ord[i] != not_ord[i]) {
             out++;
+            prec = not_ord[i];
+            not_ord[i] = ord[i];
+            j = i + 1;
+            while (not_ord[j] != ord[i]) { // shift a sinistra finchè non si trova l'elemento corrispondente
+                curr = not_ord[j];
+                not_ord[j] = prec;
+                prec = curr;
+                j++;
+            }
         }
-        current++;
     }
     return out;
 }

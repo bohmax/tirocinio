@@ -43,7 +43,8 @@ struct sockaddr_in servaddr;
 int fd; //file descriptor del socket per inoltrare nuovamente i pacchetti
 FILE* pipe_plot;
 long* delay_calibrator;
-int num_list = 1, from_port = 5000, stat_port = DPORT, stat_interv = LFINESTRA, num_decoder = NUMDECODERTHR;
+int num_list = 1, from_port = 5000, stat_port = DPORT, video_port = DPORT,stat_interv = LFINESTRA, num_decoder = NUMDECODERTHR;
+char ip_sender[DIM_IP];
 
 void set_pipe(){
     pipe_plot = popen("python3 ImagePicker/plot.py", "w");
@@ -138,7 +139,7 @@ void set_socket(){
     bzero(&servaddr,sizeof(servaddr));
     servaddr.sin_family = AF_INET;
     servaddr.sin_addr.s_addr = inet_addr(HOSTNAME);
-    servaddr.sin_port = htons(stat_port);
+    servaddr.sin_port = htons(video_port);
 }
 
 int main(int argc, const char * argv[]) {
@@ -152,16 +153,18 @@ int main(int argc, const char * argv[]) {
     pthread_t order;
     struct bpf_program* fp = NULL;        /* to hold compiled program */
     
-    if (argc != 10) exit(EXIT_FAILURE);
+    if (argc != 12) exit(EXIT_FAILURE);
     dev_name = (char*) argv[1];
-    num_list = atoi(argv[2]);
-    from_port = atoi(argv[3]);
-    stat_port = atoi(argv[4]);
-    path_file = (char*) argv[5];
-    path_image = (char*) argv[6];
-    path_image_sender = (char*) argv[7];
-    stat_interv = atoi(argv[8]);
-    num_decoder = atoi(argv[9]);
+    memcpy(ip_sender, argv[2], strlen(argv[2]));
+    num_list = atoi(argv[3]);
+    from_port = atoi(argv[4]);
+    stat_port = atoi(argv[5]);
+    video_port = atoi(argv[6]);
+    path_file = (char*) argv[7];
+    path_image = (char*) argv[8];
+    path_image_sender = (char*) argv[9];
+    stat_interv = atoi(argv[10]);
+    num_decoder = atoi(argv[11]);
     
     statistiche = malloc(sizeof(stat_t)*num_list);
     listener = malloc(sizeof(pthread_t)*num_list);

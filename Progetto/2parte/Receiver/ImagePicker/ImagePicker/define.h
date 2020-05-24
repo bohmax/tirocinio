@@ -24,6 +24,7 @@
 #define MAC_LENGHT 6//lunghezza mac address
 #define MAC_ADDR    0x00 //mac address da settare su un pacchetto ethernet da inviare a loopback
 #define HOSTNAME "127.0.0.1" //host name su cui inoltrare i pacchetti rtp
+#define DIM_IP 15 // dimensione di un ip in formato stringa
 typedef int make_iso_compilers_happy;
 
 #endif /* define_h */

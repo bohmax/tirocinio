@@ -56,6 +56,7 @@ typedef struct{
     uint16_t lunghezza; //lunghezza media perdita
     int delay; //delay medio della finestra
     uint16_t ordine; //numero di pacchetti fuori ordine
+    int number_of_pkt; //numero di pacchetti ricevuti
 }send_stat;
 
 typedef struct stats{
@@ -66,7 +67,7 @@ typedef struct stats{
     uint16_t min; //pacchetto con id più piccolo
     uint16_t max; //pacchetto con id più grande
     uint16_t id_accepted; //non si accettano id di un finestra passata, questo valore diventa il max value della finestra precedemte
-    uint16_t* ids;
+    uint16_t* ids; // contiene tutti i sequence number della finestra
     uint8_t index; //ultimo elemento inserito
 }stat_t;
 

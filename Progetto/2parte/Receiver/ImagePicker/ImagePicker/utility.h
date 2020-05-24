@@ -72,7 +72,8 @@ extern list* testa_dec;
 extern list* coda_dec;  /* coda della lista sopra */
 extern sigset_t sigset_usr;
 extern stat_t* statistiche;
-extern int num_list, from_port, stat_port, stat_interv, num_decoder; /* variabili per l'input */
+extern int num_list, from_port, stat_port, video_port, stat_interv, num_decoder; /* variabili per l'input */
 extern long* delay_calibrator; // calcola il delay del primo pacchetto
+extern char ip_sender[DIM_IP];
 
 #endif /* utility_h */

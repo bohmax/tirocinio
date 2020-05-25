@@ -3,8 +3,6 @@ import socket
 from ctypes import *
 from datetime import datetime
 
-HOST = '127.0.0.1'
-
 
 class Stat(Structure):  # Struttura che deve essere identica alla struttura send_stat definita in struct.h
     _fields_ = [("perdita", c_uint16),
@@ -16,14 +14,15 @@ class Stat(Structure):  # Struttura che deve essere identica alla struttura send
 
 def stat(args):
     data = datetime.now()
-    path = 'statistics/stat/' + str(data) + '.csv'
+    path = 'statistics/stat' + str(data) + '.csv'
     queue = args[0]
-    num_lst = args[1]  # per sapere il numero di sender
+    ip = args[1]
     port = args[2]
+    num_lst = args[3]  # per sapere il numero di sender
     esci = False
     dim = sizeof(Stat)
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind((HOST, port))
+        s.bind((ip, port))
         s.listen()
         conn, addr = s.accept()
         with conn:
@@ -35,13 +34,13 @@ def stat(args):
                 while not esci:
                     try:
                         data = conn.recv(dim*num_lst, socket.MSG_WAITALL)  # aspetto che vengano ricevuti tutti i byte dichiarati non solo il massimo
+                        if not data:
+                            break
+                        for i in range(num_lst):
+                            test = data[i*dim:(i+1)*dim]
+                            stat_ = Stat.from_buffer_copy(test)
+                            writer.writerow([stat_.perdita, stat_.lunghezza, stat_.delay, stat_.ordine, stat_.num_of_pkt])
+                            #print("Received perd=%d, lungh=%d, delay=%d, ord=%d" % (stat_.perdita, stat_.lunghezza, stat_.delay, stat_.ordine))
                     except KeyboardInterrupt:
                         break
-                    if not data:
-                        break
-                    for i in range(num_lst):
-                        test = data[i*dim:(i+1)*dim]
-                        stat_ = Stat.from_buffer_copy(test)
-                        writer.writerow([stat_.perdita, stat_.lunghezza, stat_.delay, stat_.ordine, stat_.num_of_pkt])
-                        #print("Received perd=%d, lungh=%d, delay=%d, ord=%d" % (stat_.perdita, stat_.lunghezza, stat_.delay, stat_.ordine))
         print("Esco dalle statistiche")

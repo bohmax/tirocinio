@@ -22,15 +22,15 @@ def to_image(args):
 def analyzer(args):
     queue = args[0]
     pcap_path = args[1]
-    port = args[2]
-    path_gop = args[3]
-    path_img = args[4]
+    path_gop = args[2]
+    path_img = args[3]
     num_frame = 0
     num_gop = 0
     payload = bytearray()
     metadata = bytearray()
     inizialized = False
-
+    print(pcap_path)
+    bind_layers(UDP, RTP)
     '''
     Devo iniziare a unificare quando ricevo pacchetti Header(nal type == 5)
     i pacchetti P sono con nal_type == 1
@@ -53,10 +53,9 @@ def analyzer(args):
             else:
                 if val == 'Esci':
                     break
-            if IP in pkt and UDP in pkt and pkt[UDP].dport == port:
+            if IP in pkt and RTP in pkt:
                 # https://stackoverflow.com/questions/7665217/how-to-process-raw-udp-packets-so-that-they-can-be-decoded-by-a-decoder-filter-i
                 #prendo H264 FRAGMENT
-                pkt[UDP].payload = RTP(pkt[Raw].load)
                 data = pkt[RTP].load
 
                 #FU - A - -HEADER

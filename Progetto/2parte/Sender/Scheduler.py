@@ -33,7 +33,7 @@ conf.use_pcap = True  # permette di usare subito un nuovo socket appena lo creo
 nomi_operatori = ['Vodafone', "Tim", "Wind"]
 pcap_path = sys.argv[1]
 interface = sys.argv[2]
-ip = sys.argv[3]
+ip_receiver = sys.argv[3]
 num_porte = int(sys.argv[4])
 porta_inoltro = int(sys.argv[5])
 port_stat = int(sys.argv[6])
@@ -65,22 +65,22 @@ def canale(queue, nome, gamma_e, beta_e, gamma_p, beta_p, gamma_d, beta_d, inter
 if __name__ == "__main__":
     process_list = []
     queue_list = []
-    sender = Sender(None, sys.argv[2], ip, 0)  # non si spedirà mai con questo sender, usato solo per settare un pacchetto
+    sender = Sender(None, interface, ip_receiver, 0)  # non si spedirà mai con questo sender, usato solo per settare un pacchetto
     for i in range(num_porte):
         if i >= len(nomi_operatori):
             i = 2
         queue_list.append(Queue())
         process_list.append(Process(target=canale, args=(queue_list[i], nomi_operatori[i], gamma_evento, beta_evento,
                                                          gamma_perdita, beta_perdita, gamma_delay, beta_delay,
-                                                         interface, ip, porta_inoltro)))
+                                                         interface, ip_receiver, porta_inoltro)))
         process_list[i].start()
         porta_inoltro += 1
 
     queue_stat = Queue()
     queue_gop = Queue()
     esci = False
-    stat_process = Process(target=Statistiche.stat, args=((queue_stat, num_porte, port_stat), ))
-    #image_process = Process(target=Image_Handler.analyzer, args=((queue_gop, sys.argv[1], porta_pcap, gop_dir, img_dir), )) # da usare
+    stat_process = Process(target=Statistiche.stat, args=((queue_stat, sender.get_srcIP(), port_stat, num_porte), ))
+    #image_process = Process(target=Image_Handler.analyzer, args=((queue_gop, pcap_path, gop_dir, img_dir), )) # da usare
     #image_process.start() # da usare
     #queue.get(block=False)
     stat_process.start()

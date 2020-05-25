@@ -108,9 +108,6 @@ void* statThread(void* arg){
                 //calcolo out of order
                 spedisci[i].ordine = stat_out_of_order(ids_copy[i], ids_copy_temp, index[i]);
                 //calcolo lunghezza
-                if (ids_copy[i]==0) {
-                    printf("stop");
-                }
                 spedisci[i].lunghezza = stat_lunghezza(ids_copy[i], index[i]);
                 size = index[i] - 1; // numero di elementi nell'array
                 lenght = ids_copy[i][size] - ids_copy[i][0]; // valore massimo meno minimo
@@ -143,7 +140,7 @@ void* statThread(void* arg){
 }
 
 void* DecoderThread(void* arg){
-    printf("Thread per salvari i GOP creato\n");
+    printf("Thread decodifica creato\n");
     int esci = 0;
     gop_info* el = NULL;
     while (!esci) {

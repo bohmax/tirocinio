@@ -62,7 +62,10 @@ def psnr_calc(im1, im2, gop, frame):
         distance += 1
     img1 = cv2.imread(im1)  # im1 è l'immagine lato receiver
     img2 = cv2.imread(im2)
-    psnr = cv2.PSNR(img1, img2)
+    try:
+        psnr = cv2.PSNR(img1, img2)
+    except:
+        return
     if psnr > 60:
         psnr = 60
     num_frame += 1

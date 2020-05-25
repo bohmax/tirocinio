@@ -20,12 +20,12 @@ if [ "$#" -ne 2 ]; then
     exit -1
 fi
 
-chmod +x sender.sh
+chmod +x Script/sender.sh
 if [ ! $? -eq 0 ]; then
    echo "Failed to give scipt permission"
    exit -1
 fi
-chmod +x receiver.sh
+chmod +x Script/receiver.sh
 if [ ! $? -eq 0 ]; then
    echo "Failed to give scipt permission"
    exit -1
@@ -34,9 +34,9 @@ fi
 # Attenzione qui ci si aspetta che entrambi i config file siano corretti 
 # e che tutto vada a buon fine sennò si dovranno arrestare antrambi gli script(o uno dei due se l'altro fallisce) 
 # manualmente inviando un SIGINT, è consigliabile usarli prima separatamente
-./sender.sh "$1" &
+Script/sender.sh "$1" &
 clientpid+="$! " 
 sleep 2
-./receiver.sh "$2" &
+Script/receiver.sh "$2" &
 clientpid+="$! " 
 wait $clientpid

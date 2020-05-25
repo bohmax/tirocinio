@@ -22,8 +22,8 @@ class Sender:
             conf.L3socket = L3RawSocket(iface=interface)  # https://scapy.readthedocs.io/en/latest/troubleshooting.html
             self._socket = conf.L3socket
         self._operatore = operatore
-        self._mac_address = get_if_hwaddr(conf.iface)
-        self._src_ip = get_if_addr(conf.iface)
+        self._mac_address = get_if_hwaddr(interface)
+        self._src_ip = get_if_addr(interface)
         self._ip = ip
         self._port = port
 
@@ -55,6 +55,9 @@ class Sender:
 
     def setPort(self, port):
         self._port = port
+
+    def get_srcIP(self):
+        return self._src_ip
 
     def getIP(self):
         return self._ip

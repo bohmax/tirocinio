@@ -18,7 +18,7 @@ if [[ $UID != 0 ]]; then
     echo "sudo $0 $*"
     exit -1
 fi
-if [ "$#" -ne 2 ]; then
+if [ "$#" -ne 3 ]; then
     echo "$helper"
     exit -1
 fi
@@ -46,7 +46,7 @@ if [[ "$1" -eq 0 ]]; then
 	Script/all_in_one.sh "$2" "$3"
 elif [[ "$1" -eq 1 ]]; then
 	Script/sender.sh "$2"
-elif [[ "$1" -eq 3 ]]; then
+elif [[ "$1" -eq 2 ]]; then
 	Script/receiver.sh "$3"
 else
 	echo "Inserire il primo argomento con un valore tra 0 e 2 assicurandosi di selezionare il valore opportuno"

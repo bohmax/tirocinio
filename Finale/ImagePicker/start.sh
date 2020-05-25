@@ -48,7 +48,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 fi
 
 eval $GSTREAM_LOC $PIPELINE $SCREEN &
-PID+="$!"
-ImagePicker/client "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9" "$10" "$11"
-PID+="$!"
+PID="$!"
+ImagePicker/client "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9" "${10}" "${11}"
 wait $PID
+

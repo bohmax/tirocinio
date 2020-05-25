@@ -21,12 +21,13 @@ argv[5] la prima porta di un canale, se ci sono più porta i canali saranno nume
 argv[6] Specifica la porta in cui saranno ricevute le statistiche
 argv[7] Specifica il path in cui saranno salvati i GOP
 argv[8] Specifica il path in cui saranno salvati i frame
-argv[9] Specifica il parametro gamma per decidere se si entra nell'evento perdita pacchetti
-argv[10] Specifica il parametro beta per decidere se si entra nell'evento perdita pacchetti
-argv[11] Specifica il parametro gamma per decidere quanti pacchetti scartare nell'evento perdita pacchetti
-argv[12] Specifica il parametro beta per decidere quanti pacchetti scartare nell'evento perdita pacchetto
-argv[13] Specifica il parametro gamma per decidere la durata del delay
-argv[14] Specifica il parametro beta per decidere la durata del delay
+argv[9] Specifica se usare i valori gamma, 1 per usarli, 0 altrimenti
+argv[10] Specifica il parametro gamma per decidere se si entra nell'evento perdita pacchetti
+argv[11] Specifica il parametro beta per decidere se si entra nell'evento perdita pacchetti
+argv[12] Specifica il parametro gamma per decidere quanti pacchetti scartare nell'evento perdita pacchetti
+argv[13] Specifica il parametro beta per decidere quanti pacchetti scartare nell'evento perdita pacchetto
+argv[14] Specifica il parametro gamma per decidere la durata del delay
+argv[15] Specifica il parametro beta per decidere la durata del delay
 """
 
 conf.use_pcap = True  # permette di usare subito un nuovo socket appena lo creo
@@ -39,16 +40,17 @@ porta_inoltro = int(sys.argv[5])
 port_stat = int(sys.argv[6])
 gop_dir = sys.argv[7]
 img_dir = sys.argv[8]
-gamma_evento = int(sys.argv[9])
-beta_evento = int(sys.argv[10])
-gamma_perdita = int(sys.argv[11])
-beta_perdita = int(sys.argv[12])
-gamma_delay = int(sys.argv[13])
-beta_delay = int(sys.argv[14])
+simula = int(sys.argv[9])
+gamma_evento = float(sys.argv[10])
+beta_evento = float(sys.argv[11])
+gamma_perdita = float(sys.argv[12])
+beta_perdita = float(sys.argv[13])
+gamma_delay = float(sys.argv[14])
+beta_delay = float(sys.argv[15])
 
 
-def canale(queue, nome, gamma_e, beta_e, gamma_p, beta_p, gamma_d, beta_d, interface, ip, porta):
-    operatore = Operatore(name=nome, gamma_e=gamma_e, beta_e=beta_e, gamma_p=gamma_p, beta_p=beta_p,
+def canale(queue, nome, interface, ip, porta, simulato, gamma_e, beta_e, gamma_p, beta_p, gamma_d, beta_d):
+    operatore = Operatore(name=nome, simulate=simulato, gamma_e=gamma_e, beta_e=beta_e, gamma_p=gamma_p, beta_p=beta_p,
                           gamma_d=gamma_d, beta_d=beta_d)
     sender = Sender(operatore, interface, ip, porta)
     while True:
@@ -65,14 +67,17 @@ def canale(queue, nome, gamma_e, beta_e, gamma_p, beta_p, gamma_d, beta_d, inter
 if __name__ == "__main__":
     process_list = []
     queue_list = []
+    simulate = False
+    if simula > 0:
+        simulate = True
     sender = Sender(None, interface, ip_receiver, 0)  # non si spedirà mai con questo sender, usato solo per settare un pacchetto
     for i in range(num_porte):
         if i >= len(nomi_operatori):
             i = 2
         queue_list.append(Queue())
-        process_list.append(Process(target=canale, args=(queue_list[i], nomi_operatori[i], gamma_evento, beta_evento,
-                                                         gamma_perdita, beta_perdita, gamma_delay, beta_delay,
-                                                         interface, ip_receiver, porta_inoltro)))
+        process_list.append(Process(target=canale, args=(queue_list[i], nomi_operatori[i], interface, ip_receiver, porta_inoltro,
+                                                         simulate, gamma_evento, beta_evento, gamma_perdita, beta_perdita,
+                                                         gamma_delay, beta_delay)))
         process_list[i].start()
         porta_inoltro += 1
 
@@ -82,7 +87,6 @@ if __name__ == "__main__":
     stat_process = Process(target=Statistiche.stat, args=((queue_stat, sender.get_srcIP(), port_stat, num_porte), ))
     #image_process = Process(target=Image_Handler.analyzer, args=((queue_gop, pcap_path, gop_dir, img_dir), )) # da usare
     #image_process.start() # da usare
-    #queue.get(block=False)
     stat_process.start()
     try:
         queue_stat.get()

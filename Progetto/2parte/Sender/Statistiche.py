@@ -14,7 +14,7 @@ class Stat(Structure):  # Struttura che deve essere identica alla struttura send
 
 def stat(args):
     data = datetime.now()
-    path = 'statistics/stat' + str(data) + '.csv'
+    path = 'statistics/stat/' + str(data) + '.csv'
     queue = args[0]
     ip = args[1]
     port = args[2]

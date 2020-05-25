@@ -109,8 +109,8 @@ void* statThread(void* arg){
                 spedisci[i].ordine = stat_out_of_order(ids_copy[i], ids_copy_temp, index[i]);
                 //calcolo lunghezza
                 spedisci[i].lunghezza = stat_lunghezza(ids_copy[i], index[i]);
-                size = index[i] - 1; // numero di elementi nell'array
-                lenght = ids_copy[i][size] - ids_copy[i][0]; // valore massimo meno minimo
+                size = index[i]; // numero di elementi nell'array
+                lenght = ids_copy[i][size] - ids_copy[i][0] + 1; // max - min + 1(l'estremo)
                 spedisci[i].perdita = size > lenght ? size - lenght : lenght - size;
                 spedisci[i].number_of_pkt = index[i];
             }

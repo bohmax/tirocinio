@@ -1,8 +1,6 @@
 import csv
 import fileinput
-import sys
 import time
-from io import StringIO
 from datetime import datetime
 import matplotlib
 import cv2
@@ -11,7 +9,7 @@ from threading import Thread
 from matplotlib.animation import FuncAnimation
 
 data = datetime.now()
-path = 'statistics/plot' + str(data) + '.csv'
+path = 'statistics/plot/' + str(data) + '.csv'
 matplotlib.use('Qt5Agg')
 fig, ax = plt.subplots()
 plt.ylabel("Quality Db")

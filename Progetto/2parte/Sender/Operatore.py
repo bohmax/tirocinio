@@ -19,45 +19,65 @@ class Operatore:
     @param loss: probabilità con la quale i pacchetti vengono droppati per motivi legati alla rete
     @param delay: ritardi tra un pacchetto e l'altro
     """
-    def __init__(self, name, gamma_e, beta_e, gamma_p, beta_p, gamma_d, beta_d):
+    def __init__(self, name, simulate, gamma_e, beta_e, gamma_p, beta_p, gamma_d, beta_d):
         self._name = name
-        #self._loss = loss
-        self._gamme_e = gamma_e
-        self._betta_e = beta_e
-        self._gamme_p = gamma_p
+        self._simulate = simulate
+        self._gamma_e = gamma_e
+        self._beta_e = beta_e
+        self._gamma_p = gamma_p
         self._beta_p = beta_p
-        self._delay = gamma.rvs(gamma_d, scale=1 / beta_d, size=1000)
-        self._evento = gamma.rvs(gamma_e, scale=1 / beta_e, size=1000)
-        self._perdita = gamma.rvs(gamma_p, scale=1 / beta_p, size=1000)
-        self._counter = 0
+        self._gamma_d = gamma_d
+        self._beta_d = beta_d
+        self._delay = gamma.rvs(gamma_d, scale=beta_d, size=1)
+        self._evento = gamma.rvs(gamma_e, scale=beta_e, size=1)
+        self._perdita = gamma.rvs(gamma_p, scale=beta_p, size=1)
+        self._delay_prec = 0
+        self._counter = 0  # numero di paccheti da scartare
+        self._indice = 0  # numero di pacchetti inviati
         self._delay_list = []  # lista in cui verrano inseriti i pacchetti da non spedire subito
 
     def send(self, socket, pkt, indice):
-        index = indice % 1000
+        if self._simulate:
+            ret = self.send_simulate(socket, pkt, indice)
+            if ret == 0:
+                self._delay = gamma.rvs(self._gamma_d, scale=self._beta_d, size=1000)
+                self._evento = gamma.rvs(self._gamma_e, scale=self._beta_e, size=1000)
+                self._perdita = gamma.rvs(self._gamma_p, scale=self._beta_p, size=1000)
+        else:  # ci sarà un ritardo e una perdita reale
+            self.send_pkt(socket, pkt)
+
+    def send_simulate(self, socket, pkt, indice):
+        index = self._indice % 1000
         rng = random.random()
+        self.send_delayed(socket)  # spedisce i vecchi pacchetti
+        if self._counter <= 0:  # mi sto chiedendo se non ho pacchetti da scartare
+            if rng > self._evento[index]:
+                val = self._delay[index]  # calcola il delay
+                delay = val - self._delay_prec
+                if delay < 0:
+                    delay = 0
+                self._delay_prec = delay
+                self._delay_list.append((pkt, time.time() + delay))
+                self._indice += 1
+            else:  # entra nell'evento perdita
+                self._counter = math.ceil(self._perdita[index]) - 1
+                self._pkt_losted.append(indice)
+        else:  # se ho pacchetti da scartare a causa di un evento perdita
+            self._counter -= 1
+        return index
+
+    def send_delayed(self, socket):
         for i in reversed(self._delay_list):
             el, times = i
             if time.time() > times:
-                try:
-                    socket.send(el)
-                except KeyboardInterrupt:
-                    pass
+                self.send_pkt(socket, el)
                 self._delay_list.remove(i)
-        #if self._counter > 0:
-        #    self._counter -= 1
-        #    return
-        #if rng <= self._evento[index]:
-        if rng <= 0.1: #delay
-            delay = self._delay[index]
-            self._delay_list.append((pkt, time.time()+delay))
-        else:
-            try:
-                socket.send(pkt)
-            except KeyboardInterrupt:
-                pass
-        #else:
-        #    self._counter = math.ceil(self._perdita[index])
-        #    self._pkt_losted.append(indice)
+
+    def send_pkt(self, socket, pkt):
+        try:
+            socket.send(pkt)
+        except KeyboardInterrupt:
+            pass
 
     def setName(self, name):
         self._name = name

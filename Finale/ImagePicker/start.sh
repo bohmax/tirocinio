@@ -47,8 +47,8 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	SCREEN='osxvideosink'
 fi
 
-eval $GSTREAM_LOC $PIPELINE $SCREEN &
+eval "$GSTREAM_LOC $PIPELINE $SCREEN &>/dev/null &"
 PID="$!"
 ImagePicker/client "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9" "${10}" "${11}"
-wait $PID
+kill -2 $PID &>/dev/null
 

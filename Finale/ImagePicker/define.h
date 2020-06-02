@@ -25,6 +25,7 @@
 #define MAC_ADDR    0x00 //mac address da settare su un pacchetto ethernet da inviare a loopback
 #define HOSTNAME "127.0.0.1" //host name su cui inoltrare i pacchetti rtp
 #define DIM_IP 15 // dimensione di un ip in formato stringa
+#define DIM_TIMESTAMP 8 // dimensione del timestamp aggiunto nei pacchetti
 typedef int make_iso_compilers_happy;
 
 #endif /* define_h */

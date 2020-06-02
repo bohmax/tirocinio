@@ -56,12 +56,11 @@ def canale(queue, nome, interface, ip, porta, simulato, gamma_e, beta_e, gamma_p
     while True:
         try:
             pkt, index = queue.get()
-        except KeyboardInterrupt:
-            break
-        else:
             if pkt is None:
                 break
-        sender.send_setted(pkt, index)
+            sender.send_setted(pkt, index)
+        except KeyboardInterrupt:
+            break
 
 
 if __name__ == "__main__":
@@ -87,11 +86,11 @@ if __name__ == "__main__":
     stat_process = Process(target=Statistiche.stat, args=((queue_stat, sender.get_srcIP(), port_stat, num_porte), ))
     #image_process = Process(target=Image_Handler.analyzer, args=((queue_gop, pcap_path, gop_dir, img_dir), )) # da usare
     #image_process.start() # da usare
-    stat_process.start()
-    try:
-        queue_stat.get()
-    except KeyboardInterrupt:
-        exit(-1)
+    #stat_process.start()
+    #try:
+    #    queue_stat.get()
+    #except KeyboardInterrupt:
+    #    exit(-1)
     packets = rdpcap(sys.argv[1], 1)
     timer = Timing()
     start = time.time()

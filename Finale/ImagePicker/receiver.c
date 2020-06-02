@@ -50,13 +50,13 @@ void send_packet(rtp* el){
     udp->uh_dport = htons(video_port);
     udp->uh_sum = 0;
     send = (el->packet + to_rtphdr - fix);
-    new_size = el->size - to_rtphdr + fix;
+    new_size = el->size - to_rtphdr + fix - DIM_TIMESTAMP; // DIM_TIMESTAMP va a togliere il timestamp aggiunto per calcolare il delay
     if (sendto(fd, send, new_size, 0, (struct sockaddr*)&servaddr, sizeof(servaddr)) < 0)
         perror("cannot send packet");
     el->sent = 1;
 }
 
-void stat_calc(rtp* el, int index, uint16_t rtp_id, uint32_t timestamp){
+void stat_calc(rtp* el, int index, uint16_t rtp_id, double pkt_timestamp, uint32_t timestamp){
     stat_t* stat = &statistiche[index];
     if (delay_calibrator[index] == -1)
         delay_calibrator[index] = labs(timestamp - el->r_timestamp); // calibra il delay dei pacchetti, calcolato solo per il primo pacchetto
@@ -161,9 +161,10 @@ int workOnPacket(rtp* el, int stat_index){
     int rtpdata_len = el->size - to_rtpdata + fix;
     rtphdr* rtpHeader = (rtphdr*)(el->packet + to_rtphdr - fix);
     uint16_t seq = ntohs(rtpHeader->seq_num);
+    double timestamp = *(double*) (el->packet + el->size - DIM_TIMESTAMP);
     //modifica statistiche
     pthread_mutex_lock(&mtxstat[el->from_thr]);
-    stat_calc(el, el->from_thr, seq, ntohl(rtpHeader->TS));
+    stat_calc(el, el->from_thr, seq, timestamp,  ntohl(rtpHeader->TS));
     pthread_mutex_unlock(&mtxstat[el->from_thr]);
     //printf("RTP number [%d], timestamp of this packet is: %d\n", ntohs(rtpHeader->seq_num), ntohl(rtpHeader->TS)); //function converts the unsigned short integer netshort from network byte order to host byte order.
     u_char* rtpdata = (u_char*) (el->packet + to_rtpdata - fix);
@@ -181,7 +182,7 @@ int workOnPacket(rtp* el, int stat_index){
         if (fragment_type == 28) //dati per il GOP
             ris = addPacketToGOP(rtpdata, rtpdata_len, seq, el);
         else{
-            el->nal_type = fragment_type; //non è esattamente ilnal type ma posso inserire il valore qui
+            el->nal_type = fragment_type; //non è esattamente il nal type ma posso inserire il valore qui
             pthread_mutex_lock(&mtx_info);
             if (info->metadata_start > seq && seq < info->start_seq)
                 info->metadata_start = seq;
@@ -199,7 +200,7 @@ rtp* set_header(rtp* el, uint16_t* from, int fix, int end_seq){
     u_char* rtpdata = (u_char*) (el->packet + to_rtpdata - fix);
     
     starter(&payload);
-    add(&payload, rtpdata, rtpdata_len);
+    add(&payload, rtpdata, rtpdata_len-DIM_TIMESTAMP);
     
     while (!el->sent); //aspetto che il pacchetto è stato spedito
     return delete_and_get_next(el, from, end_seq);
@@ -213,7 +214,7 @@ rtp* save_packet(FILE* f, rtp* el, uint16_t* from, int fix, int end_seq){
         memcpy(payload.value+payload.size, &(el->decoder), 1); // header per il frame
         payload.size += 1;
     }
-    add(&payload, rtpdata+2, rtpdata_len-2);
+    add(&payload, rtpdata+2, rtpdata_len-2-DIM_TIMESTAMP);
     fwrite(payload.value, 1, payload.size, f);
     payload.size = 0;
     return delete_and_get_next(el, from, end_seq);

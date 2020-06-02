@@ -17,7 +17,10 @@ def to_image(args):
     gop_path = args[0]
     img_path = args[1]
     with open(os.devnull, 'w') as fp:
-        subprocess.Popen(["ffmpeg", "-i", gop_path, img_path], stdin=None, stdout=fp, stderr=fp)
+        try:
+            subprocess.Popen(["ffmpeg", "-i", gop_path, img_path], stdin=None, stdout=fp, stderr=fp)
+        except KeyboardInterrupt:
+            pass
 
 def analyzer(args):
     queue = args[0]

@@ -1,7 +1,9 @@
 import math
 import random
+import struct
 import time
 
+from scapy.packet import Raw
 from scipy.stats import gamma
 
 
@@ -44,24 +46,26 @@ class Operatore:
                 self._evento = gamma.rvs(self._gamma_e, scale=self._beta_e, size=1000)
                 self._perdita = gamma.rvs(self._gamma_p, scale=self._beta_p, size=1000)
         else:  # ci sarà un ritardo e una perdita reale
+            pkt = pkt/Raw(bytearray(struct.pack("d", time.time())))
             self.send_pkt(socket, pkt)
 
     def send_simulate(self, socket, pkt, indice):
         index = self._indice % 1000
-        rng = random.random()
         self.send_delayed(socket)  # spedisce i vecchi pacchetti
         if self._counter <= 0:  # mi sto chiedendo se non ho pacchetti da scartare
+            rng = random.random()
             if rng > self._evento[index]:
                 val = self._delay[index]  # calcola il delay
                 delay = val - self._delay_prec
                 if delay < 0:
                     delay = 0
                 self._delay_prec = delay
+                pkt = pkt / Raw(bytearray(struct.pack("d", time.time())))
                 self._delay_list.append((pkt, time.time() + delay))
-                self._indice += 1
             else:  # entra nell'evento perdita
                 self._counter = math.ceil(self._perdita[index]) - 1
                 self._pkt_losted.append(indice)
+            self._indice += 1
         else:  # se ho pacchetti da scartare a causa di un evento perdita
             self._counter -= 1
         return index

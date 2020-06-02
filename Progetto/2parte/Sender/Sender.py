@@ -29,14 +29,17 @@ class Sender:
 
     def set_packet(self, pkt):
         if not self._loopback:
+            pkt[Ether].len += 8
             pkt[Ether].src = self._mac_address
             del pkt[Ether].dst
         elif not sys.platform == 'linux':
             pkt = Loopback()/pkt.getlayer(IP)
         else:
             pkt = pkt.getlayer(IP)
+        pkt[IP].len += 8
         pkt[IP].src = self._src_ip
         pkt[IP].dst = self._ip
+        pkt[UDP].len += 8
         del pkt[IP].chksum
         del pkt[UDP].chksum
         return pkt

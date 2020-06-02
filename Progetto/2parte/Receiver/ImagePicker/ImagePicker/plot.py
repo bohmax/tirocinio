@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from threading import Thread
 from matplotlib.animation import FuncAnimation
 
+display_n_frame = 7
 data = datetime.now()
 path = 'statistics/plot/' + str(data) + '.csv'
 matplotlib.use('Qt5Agg')
@@ -23,11 +24,11 @@ my_xticks = []
 plt.xticks(x_vals, my_xticks)
 dim, max, num_frame = 0, 1.0, 0  # dimensione array da plattare, max è il valore massimo da plottare e numero tatale dei frame attualmente inseriti
 distance = 0  # distanza dall'ultimo gop utilizzato
-ax.set_xlim(-0.5, 1.5)
+ax.set_xlim(-0.5, display_n_frame + 0.5)
 ax.set_ylim(0, 61)
 move, esci = True, False
 last_image = ""  # ultima immagine utile, da confrontare in caso l'ultima immagina non sia decodificata
-current_gop = 0  # ultimo gop utilizzato per l'ultima immagine
+current_gop, last_frame = 0, 0  # ultimo gop e frame utilizzato per l'ultima immagine
 not_in_current_gop = []  # vengono memorizzati qua i gop superiori per pater calcolare il psnr in seguito
 with open(path, 'w+') as f:
     writer = csv.writer(f)
@@ -35,19 +36,26 @@ with open(path, 'w+') as f:
 
 
 def sync_gop():
-    global current_gop, not_in_current_gop, last_image
-    while not_in_current_gop:
+    global current_gop, not_in_current_gop, last_frame, last_image, last_frame
+    cicla = True  # esci sse non c'è un messaggio di fine del gop corrente
+    while not_in_current_gop and cicla:
+        cicla = False
         for i in not_in_current_gop[:]:
             string, *other = i
             if string == "Fine":
-                if other == current_gop:
+                string, gop_num = i
+                if gop_num == current_gop:
                     current_gop += 1
+                    last_frame = 0
                     not_in_current_gop.remove(i)
+                    cicla = True
             else:
                 im1, im2, temp_gop, temp_frame = i
-                if temp_gop == current_gop:
-                    psnr_calc(im1, im2, temp_gop, temp_frame)
+                if temp_gop == current_gop and last_frame+1 == temp_frame:
+                    last_frame = temp_frame
+                    psnr_calc(im1, im2, temp_gop, str(temp_frame))
                     not_in_current_gop.remove(i)
+                    cicla = True
 
 
 def psnr_calc(im1, im2, gop, frame):
@@ -63,13 +71,14 @@ def psnr_calc(im1, im2, gop, frame):
     try:
         psnr = cv2.PSNR(img1, img2)
     except:
+        print("Immagine per PSNR non trovata o si usa la stessa immagine")
         return
     if psnr > 60:
         psnr = 60
     num_frame += 1
     x_vals.append(num_frame)
     y_vals.append(psnr)
-    titolo = 'G ' + str(gop) + ' #F ' + frame
+    titolo = 'G' + str(gop) + '#F' + frame
     my_xticks.append(titolo)
     dim += 1
     max = dim
@@ -101,7 +110,7 @@ def onclick(event):
 
 
 def get_input():
-    global esci, last_image, current_gop, not_in_current_gop
+    global esci, last_frame, last_image, current_gop, not_in_current_gop
     for line in fileinput.input():
         line = line.rstrip('\n')
         if line == "Esci":
@@ -113,6 +122,7 @@ def get_input():
                 gop_num = int(line[1])
                 if gop_num == current_gop:  # gop corrente finito sincronizzati con il gop più recente
                     current_gop += 1
+                    last_frame = 0
                     sync_gop()
                 else:  # il fine è di un gop successivo
                     not_in_current_gop.append((line[0], gop_num))
@@ -120,13 +130,14 @@ def get_input():
                 temp_gop = int(line[2])
                 temp_frame = line[3]
                 if current_gop == temp_gop:
+                    last_frame = int(temp_frame)
                     psnr_calc(line[0], line[1], temp_gop, temp_frame)
                 else:
-                    not_in_current_gop.append((line[0], line[1], temp_gop, temp_frame))
+                    not_in_current_gop.append((line[0], line[1], temp_gop, int(temp_frame)))
 
 
 def init():
-    ax.set_xlim(-0.5, 1.5)
+    ax.set_xlim(-0.5, display_n_frame + 0.5)
     ax.set_ylim(0, 61)
     ln.set_data([], [])
     return ln,
@@ -137,7 +148,7 @@ def animate(i):
     ln.set_data(x_vals[:dim], y_vals[:dim])
     plt.xticks(x_vals[:dim], my_xticks[:dim])
     if move:
-        ax.set_xlim(max - 1.5, max + 0.5)
+        ax.set_xlim(max - display_n_frame - 1.5, max + 0.5)
     return ln,
 
 

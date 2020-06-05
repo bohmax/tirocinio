@@ -2,8 +2,6 @@ CC		=  gcc
 AR              =  ar
 CFLAGS	        += -Wall -pedantic -g
 ARFLAGS         =  rvs
-INCLUDES	= -I/usr/local/include
-LDFLAGS 	= -L/usr/local/lib
 OPTFLAGS	= #-O3 
 LIBS        = -pthread -lpcap -lavformat -lavcodec -lswscale -lavutil
 CHMOD       = chmod +x
@@ -38,17 +36,17 @@ endif
 .SUFFIXES: .c .h
 
 %: %.c
-	$(CC) $(CFLAGS) $(INCLUDES) $(OPTFLAGS) -o $@ $< $(LDFLAGS) 
+	$(CC) $(CFLAGS) $(OPTFLAGS) -o $@ $<
 
 %.o: %.c
-	$(CC) $(CFLAGS) $(INCLUDES) $(OPTFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) $(OPTFLAGS) -c -o $@ $<
 
 all		: $(TARGETS)
 		  $(CHMOD) $(SCRIPT)
 
 
 client: main.o $(HEADER)
-	$(CC) $(CFLAGS) $(INCLUDES) $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
 libclient.a: $(OBJECTS)
 	$(AR) $(ARFLAGS) $@ $^

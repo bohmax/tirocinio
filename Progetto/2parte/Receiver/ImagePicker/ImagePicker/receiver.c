@@ -63,8 +63,8 @@ void stat_calc(rtp* el, int index, uint16_t rtp_id, double pkt_timestamp, uint32
     if (rtp_id > stat->id_accepted) {
         stat->ids[stat->index]=rtp_id;
         stat->index++;
-        long diff = labs(timestamp - el->r_timestamp);
-        stat->delay += diff>delay_calibrator[index]? diff - delay_calibrator[index]: delay_calibrator[index]-diff; // memorizzo il delay, e poi lo dividerò quando vado a calcolare il delay
+        //long diff = labs(timestamp - el->r_timestamp);
+        stat->delay += el->r_timestamp - pkt_timestamp; // memorizzo il delay, e poi lo dividerò quando vado a calcolare il delay
         if (stat->max < rtp_id)
             stat->max = rtp_id;
         if (stat->min > rtp_id)

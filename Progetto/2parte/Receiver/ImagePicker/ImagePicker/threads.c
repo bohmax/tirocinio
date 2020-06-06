@@ -65,54 +65,47 @@ void* segnali(void *arg){
 void* statThread(void* arg){
     int i = 0, size, lenght;
     struct timespec ts = { 0, stat_interv*1000};
-    int* index = malloc(sizeof(int)*num_list); //indice dei vari array delle stat
-    uint16_t** ids_copy = malloc(sizeof(uint16_t*)*num_list); //copia il campo ids dell'array
-    uint16_t* ids_copy_temp = malloc(sizeof(uint16_t)*DIMARRSTAT); //array temporaneo di lavoro che copia di nuovo gli ids
-    uint16_t* current = malloc(sizeof(uint16_t)*num_list); //viene usato per calcolare out of ord
+    stat_t temp; // usato per fare lo swap con statistiche e statistiche temp
+    stat_t* statistiche_ref = malloc(sizeof(stat_t)*num_list); //contiene il riferimento alle vecchie statistiche
+    uint16_t* ids_copy = malloc(sizeof(uint16_t)*DIMARRSTAT); //array temporaneo di lavoro che copia di nuovo gli ids
     send_stat* spedisci = malloc(sizeof(send_stat)*num_list);
     for(int i = 0; i<num_list;i++){
-        index[i] = 0;
-        current[i] = 0;
-        ids_copy[i] = malloc(sizeof(uint16_t)*DIMARRSTAT);
-        for (int j = 0; j < DIMARRSTAT; j++)
-            ids_copy[i][j] = 0;
+        memset(&statistiche_ref[i], 0, sizeof(stat_t));
+        statistiche_ref[i].ids = malloc(sizeof(uint16_t)*DIMARRSTAT);
+        memset(statistiche_ref[i].ids, 0, sizeof(uint16_t)*DIMARRSTAT);
+        statistiche_ref[i].min = -1;
         memset(&spedisci[i], 0, sizeof(send_stat));
     }
-    memset(ids_copy_temp, 0, sizeof(uint16_t)*DIMARRSTAT);
+    memset(ids_copy, 0, sizeof(uint16_t)*DIMARRSTAT);
     memset(spedisci, 0, sizeof(send_stat)*num_list);
     int sockfd = set_stat_sock(); //in utility.c
     while (!esci) {
         nanosleep(&ts, NULL);
-        for (i = 0; i<num_list; i++) {
+        //cambia l'array
+        for (i = 0; i < num_list; i++){
             pthread_mutex_lock(&mtxstat[i]);
-            stat_t* stat = &statistiche[i];
-            index[i] = stat->index; // contiene il numero di pacchetti dell'i-esimo canale
-            for(int x=0; x<stat->index; x++)
-                ids_copy[i][x] = stat->ids[x];
-            spedisci[i].delay = stat->delay;
-            current[i] = stat->min;
-            stat->id_accepted = stat->max;
-            stat->index = 0;
-            stat->delay = 0;
-            stat->min = -1;
+            statistiche_ref[i].id_accepted = statistiche[i].max;
+            temp = statistiche[i];
+            statistiche[i] = statistiche_ref[i];
+            statistiche_ref[i] = temp;
             delay_calibrator[i] = -1;
             pthread_mutex_unlock(&mtxstat[i]);
         }
         //inizio vero calcolo stastiche
         for (i = 0; i < num_list; i++) {
-            if(index[i] > 0){
-                spedisci[i].delay = spedisci[i].delay/index[i];
-                for(int j = 0; j < index[i]; j++)
-                    ids_copy_temp[j] = ids_copy[i][j]; //copia array
-                qsort(ids_copy[i], index[i], sizeof(uint16_t), cmpfunc); // ordinalo
+            if(statistiche_ref[i].index > 0){
+                spedisci[i].delay = statistiche_ref[i].delay/statistiche_ref[i].index;
+                for(int j = 0; j < statistiche_ref[i].index; j++)
+                    ids_copy[j] = statistiche_ref[i].ids[j]; //copia array
+                qsort(statistiche_ref[i].ids, statistiche_ref[i].index, sizeof(uint16_t), cmpfunc); // ordinalo
                 //calcolo out of order
-                spedisci[i].ordine = stat_out_of_order(ids_copy[i], ids_copy_temp, index[i]);
+                spedisci[i].ordine = stat_out_of_order(statistiche_ref[i].ids, ids_copy, statistiche_ref[i].index);
                 //calcolo lunghezza
-                spedisci[i].lunghezza = stat_lunghezza(ids_copy[i], index[i]);
-                size = index[i]; // numero di elementi nell'array
-                lenght = ids_copy[i][size] - ids_copy[i][0] + 1; // mex - min + 1(l'estremo)
+                spedisci[i].lunghezza = stat_lunghezza(statistiche_ref[i].ids, statistiche_ref[i].index);
+                size = statistiche_ref[i].index - 1; // numero di elementi nell'array - 1(l'estemo)
+                lenght = statistiche_ref[i].ids[size] - statistiche_ref[i].ids[0]; // max - min
                 spedisci[i].perdita = size > lenght ? size - lenght : lenght - size;
-                spedisci[i].number_of_pkt = index[i];
+                spedisci[i].number_of_pkt = statistiche_ref[i].index;
             }
             else {
                 spedisci[i].perdita = -1;
@@ -121,6 +114,9 @@ void* statThread(void* arg){
                 spedisci[i].ordine = -1;
                 spedisci[i].number_of_pkt = 0;
             }
+            statistiche_ref[i].index = 0;
+            statistiche_ref[i].delay = 0;
+            statistiche_ref[i].min = -1;
         }
         // spedisci al server
         send_to_server(sockfd, spedisci);
@@ -128,12 +124,10 @@ void* statThread(void* arg){
     // close the socket
     if (sockfd != -1)
         close(sockfd);
-    free(index);
-    for(int i = 0; i<num_list;i++)
-        free(ids_copy[i]);
+    for (i=0; i<num_list; i++)
+        free(statistiche_ref[i].ids)
+    free(statistiche_ref);
     free(ids_copy);
-    free(ids_copy_temp);
-    free(current);
     free(spedisci);
     printf("Thread statistiche chiude\n");
     return (void*) 0;

@@ -20,13 +20,20 @@ void logging(const char *fmt, ...){
     fprintf( stderr, "\n" );
 }
 
-void plot_value(char path_r[], int gop_num, int FrameNo, int op){
+void plot_value(char path_r[], int gop_num, int FrameNo, int op, gop_info* info){
+    int sum = 0, i = 0;
     char PNGNameSender[128];
     sprintf(PNGNameSender, "%sframe-%06d-%06d.png", path_image_sender, gop_num, FrameNo);
     if(op)
         path_r = PNGNameSender;
     pthread_mutex_lock(&mtxplot);
-    fprintf(pipe_plot, "%s %s %d %d\n", path_r, PNGNameSender, gop_num, FrameNo);
+    fprintf(pipe_plot, "%s %s %d %d", path_r, PNGNameSender, gop_num, FrameNo);
+    //vado all'indice da utilizzare di losted
+    for(i=0; i<FrameNo ;i++)
+        sum+=info->len_losted[i];
+    for(i=0; i<info->len_losted[FrameNo] ;i++)
+        fprintf(pipe_plot, " %d", info->losted_packet[sum+i]);
+    fprintf(pipe_plot, "\n");
     fflush(pipe_plot);
     pthread_mutex_unlock(&mtxplot);
 }
@@ -39,7 +46,7 @@ void savePNG(AVPacket* packet, char PNGName[]){
     } else printf("Error: %s\n", strerror(errno));
 }
 
-int decode_to_png(AVFrame *pFrame, int FrameNo, int gop_num) {
+int decode_to_png(AVFrame *pFrame, int FrameNo, int gop_num, gop_info* info) {
     int result = 0;
     char PNGName[128];
     // codec per png
@@ -85,7 +92,7 @@ int decode_to_png(AVFrame *pFrame, int FrameNo, int gop_num) {
         }
         sprintf(PNGName, "%sframe-%06d-%06d.png", path_image, gop_num, FrameNo);
         savePNG(packet, PNGName);
-        plot_value(PNGName, gop_num, FrameNo, 0);
+        plot_value(PNGName, gop_num, FrameNo, 0, info);
         av_packet_unref(packet);
     }
     av_packet_free(&packet);
@@ -93,7 +100,7 @@ int decode_to_png(AVFrame *pFrame, int FrameNo, int gop_num) {
     return 0;
 }
 
-int pixel_to_rgb24(AVFrame *pFrame,int pix_fmt ,int FrameNo, int gop_num) {
+int pixel_to_rgb24(AVFrame *pFrame,int pix_fmt ,int FrameNo, int gop_num, gop_info* info) {
     //pFrame=avcodec_alloc_frame();
     // Allocate an AVFrame structure
     struct SwsContext* img_convert_ctx = sws_getContext(pFrame->width, pFrame->height, pix_fmt, pFrame->width, pFrame->height, AV_PIX_FMT_RGB24, SWS_BICUBIC, NULL, NULL, NULL);
@@ -123,14 +130,14 @@ int pixel_to_rgb24(AVFrame *pFrame,int pix_fmt ,int FrameNo, int gop_num) {
     pFrameRGB->width = pFrame->width;
     pFrameRGB->pts = FrameNo;
     //SaveFrame(pFrameRGB, gop_num, FrameNo); // se si volesse salvarli in formato ppm
-    decode_to_png(pFrameRGB, FrameNo, gop_num);
+    decode_to_png(pFrameRGB, FrameNo, gop_num, info);
     av_frame_free(&pFrameRGB);
     free(buffer);
     sws_freeContext(img_convert_ctx);
     return 0;
 }
 
-int decode_packet(AVPacket *pPacket, AVCodecContext *pCodecContext, int gop_num){
+int decode_packet(AVPacket *pPacket, AVCodecContext *pCodecContext, int gop_num, gop_info* info){
     // https://ffmpeg.org/doxygen/trunk/structAVFrame.html
     AVFrame *pFrame = av_frame_alloc();
     if (!pFrame){
@@ -145,7 +152,7 @@ int decode_packet(AVPacket *pPacket, AVCodecContext *pCodecContext, int gop_num)
     if (response < 0) {
         logging("Error while sending a packet to the decoder: %s", av_err2str(response));
         //send data to plot
-        plot_value("", gop_num, pCodecContext->frame_number, 1);
+        plot_value("", gop_num, pCodecContext->frame_number, 1, NULL);
         return response;
     }
     while (avcodec_receive_frame(pCodecContext, pFrame) >= 0 ){
@@ -160,7 +167,7 @@ int decode_packet(AVPacket *pPacket, AVCodecContext *pCodecContext, int gop_num)
                 pFrame->key_frame,
                 pFrame->coded_picture_number);
         //decode_to_png(pCodecContext, pFrame, pCodecContext->frame_number);
-        pixel_to_rgb24(pFrame, pCodecContext->pix_fmt, pCodecContext->frame_number, gop_num);
+        pixel_to_rgb24(pFrame, pCodecContext->pix_fmt, pCodecContext->frame_number, gop_num, info);
         //pthread_mutex_lock(&mtx);
         //pushList(&testa, &coda, pFrame, pCodecContext->frame_number);
         //pthread_cond_signal(&cond);
@@ -285,7 +292,7 @@ int create_image(gop_info* info){
     // https://ffmpeg.org/doxygen/trunk/group__lavf__decoding.html#ga4fdb3084415a82e3810de6ee60e46a61
     while ((ret = av_read_frame(c, pPacket)) >= 0) {
         if (pPacket->stream_index == video_stream_index)
-            decode_packet(pPacket, pCodecContext, info->gop_num);
+            decode_packet(pPacket, pCodecContext, info->gop_num, info);
         // https://ffmpeg.org/doxygen/trunk/group__lavc__packet.html#ga63d5a489b419bd5d45cfd09091cbcbc2
         av_packet_unref(pPacket);
         

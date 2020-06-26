@@ -56,15 +56,13 @@ void send_packet(rtp* el){
     el->sent = 1;
 }
 
-void stat_calc(rtp* el, int index, uint16_t rtp_id, double pkt_timestamp, uint32_t timestamp){
+void stat_calc(rtp* el, int index, uint16_t rtp_id, double pkt_timestamp){
     stat_t* stat = &statistiche[index];
-    if (delay_calibrator[index] == -1)
-        delay_calibrator[index] = labs(timestamp - el->r_timestamp); // calibra il delay dei pacchetti, calcolato solo per il primo pacchetto
     if (rtp_id > stat->id_accepted) {
-        stat->ids[stat->index]=rtp_id;
+        stat->pkt_information[stat->index].ids = rtp_id;
+        stat->pkt_information[stat->index].pkt_timestamp = pkt_timestamp;
+        stat->pkt_information[stat->index].r_timestamp = el->r_timestamp;
         stat->index++;
-        //long diff = labs(timestamp - el->r_timestamp);
-        stat->delay += el->r_timestamp - pkt_timestamp; // memorizzo il delay, e poi lo dividerò quando vado a calcolare il delay
         if (stat->max < rtp_id)
             stat->max = rtp_id;
         if (stat->min > rtp_id)
@@ -164,7 +162,7 @@ int workOnPacket(rtp* el, int stat_index){
     double timestamp = *(double*) (el->packet + el->size - DIM_TIMESTAMP);
     //modifica statistiche
     pthread_mutex_lock(&mtxstat[el->from_thr]);
-    stat_calc(el, el->from_thr, seq, timestamp,  ntohl(rtpHeader->TS));
+    stat_calc(el, el->from_thr, seq, timestamp);
     pthread_mutex_unlock(&mtxstat[el->from_thr]);
     //printf("RTP number [%d], timestamp of this packet is: %d\n", ntohs(rtpHeader->seq_num), ntohl(rtpHeader->TS)); //function converts the unsigned short integer netshort from network byte order to host byte order.
     u_char* rtpdata = (u_char*) (el->packet + to_rtpdata - fix);
@@ -203,7 +201,7 @@ rtp* set_header(rtp* el, uint16_t* from, int fix, int end_seq){
     add(&payload, rtpdata, rtpdata_len-DIM_TIMESTAMP);
     
     while (!el->sent); //aspetto che il pacchetto è stato spedito
-    return delete_and_get_next(el, from, end_seq);
+    return delete_and_get_next(el, from, end_seq); //definita in utility_fun.h
 }
 
 rtp* save_packet(FILE* f, rtp* el, uint16_t* from, int fix, int end_seq){
@@ -225,6 +223,7 @@ void save_GOP(uint16_t *from, gop_info* info){
     char GOPName[64];
     int num_hdr = 0;
     int fix = 0;
+    uint16_t prec = 0; //prec mi serve per sapere quali pacchetti non sono arrivati
     if (from_loopback && datalink_loopback == DLT_NULL)
         fix = (int) sizeof(struct ether_header) - 4;
     sprintf(GOPName, "%sgop-%06d", path_file, info->gop_num);
@@ -241,12 +240,16 @@ void save_GOP(uint16_t *from, gop_info* info){
         payload.size = 0;
     }
     fwrite(metadata.value, 1, metadata.size, f);
+    prec = *from;
     *from = info->start_seq;
+    fill_losted_packet(&prec, from, el, info);
     while(el && el->nal_type == 5){ // copia tutto il pacchetto header
         el = save_packet(f, el, from, fix, info->end_seq);
+        fill_losted_packet(&prec, from, el, info);
     }
     while (el && el->nal_type < 5) { //copia finchè non trova un nuovo GOP
         el = save_packet(f, el, from, fix, info->end_seq);
+        fill_losted_packet(&prec, from, el, info);
     }
     //fwrite(payload.value, 1, payload.size, f);
     //payload.size = 0;

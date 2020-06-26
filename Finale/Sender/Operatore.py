@@ -21,18 +21,18 @@ class Operatore:
     @param loss: probabilità con la quale i pacchetti vengono droppati per motivi legati alla rete
     @param delay: ritardi tra un pacchetto e l'altro
     """
-    def __init__(self, name, simulate, gamma_e, beta_e, gamma_p, beta_p, gamma_d, beta_d):
+    def __init__(self, name, simulate, alpha_e, scale_e, alpha_p, scale_p, alpha_d, scale_d):
         self._name = name
         self._simulate = simulate
-        self._gamma_e = gamma_e
-        self._beta_e = beta_e
-        self._gamma_p = gamma_p
-        self._beta_p = beta_p
-        self._gamma_d = gamma_d
-        self._beta_d = beta_d
-        self._delay = gamma.rvs(gamma_d, scale=beta_d, size=1)
-        self._evento = gamma.rvs(gamma_e, scale=beta_e, size=1)
-        self._perdita = gamma.rvs(gamma_p, scale=beta_p, size=1)
+        self._alpha_e = alpha_e
+        self._scale_e = scale_e
+        self._alpha_p = alpha_p
+        self._scale_p = scale_p
+        self._alpha_d = alpha_d
+        self._scale_d = scale_d
+        self._delay = gamma.rvs(alpha_d, scale=scale_d, size=1)
+        self._evento = gamma.rvs(alpha_e, scale=scale_e, size=1)
+        self._perdita = gamma.rvs(alpha_p, scale=scale_p, size=1)
         self._delay_prec = 0
         self._counter = 0  # numero di paccheti da scartare
         self._indice = 0  # numero di pacchetti inviati
@@ -42,9 +42,9 @@ class Operatore:
         if self._simulate:
             ret = self.send_simulate(socket, pkt, indice)
             if ret == 0:
-                self._delay = gamma.rvs(self._gamma_d, scale=self._beta_d, size=1000)
-                self._evento = gamma.rvs(self._gamma_e, scale=self._beta_e, size=1000)
-                self._perdita = gamma.rvs(self._gamma_p, scale=self._beta_p, size=1000)
+                self._delay = gamma.rvs(self._alpha_d, scale=self._scale_d, size=1000)
+                self._evento = gamma.rvs(self._alpha_e, scale=self._scale_e, size=1000)
+                self._perdita = gamma.rvs(self._alpha_p, scale=self._scale_p, size=1000)
         else:  # ci sarà un ritardo e una perdita reale
             pkt = pkt/Raw(bytearray(struct.pack("d", time.time())))
             self.send_pkt(socket, pkt)
@@ -68,6 +68,7 @@ class Operatore:
             self._indice += 1
         else:  # se ho pacchetti da scartare a causa di un evento perdita
             self._counter -= 1
+            self._pkt_losted.append(indice)
         return index
 
     def send_delayed(self, socket):

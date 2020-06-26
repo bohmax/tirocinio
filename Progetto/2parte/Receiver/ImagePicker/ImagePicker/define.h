@@ -26,6 +26,7 @@
 #define HOSTNAME "127.0.0.1" //host name su cui inoltrare i pacchetti rtp
 #define DIM_IP 15 // dimensione di un ip in formato stringa
 #define DIM_TIMESTAMP 8 // dimensione del timestamp aggiunto nei pacchetti
+#define JITTER_DIV 16
 typedef int make_iso_compilers_happy;
 
 #endif /* define_h */

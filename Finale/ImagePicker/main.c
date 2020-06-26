@@ -42,7 +42,6 @@ int datalink_loopback = 0;
 struct sockaddr_in servaddr;
 int fd; //file descriptor del socket per inoltrare nuovamente i pacchetti
 FILE* pipe_plot;
-long* delay_calibrator;
 int num_list = 1, from_port = 5000, stat_port = DPORT, video_port = DPORT,stat_interv = LFINESTRA, num_decoder = NUMDECODERTHR;
 char ip_sender[DIM_IP];
 
@@ -168,15 +167,12 @@ int main(int argc, const char * argv[]) {
     
     statistiche = malloc(sizeof(stat_t)*num_list);
     listener = malloc(sizeof(pthread_t)*num_list);
-    delay_calibrator = malloc(sizeof(long)*num_list);
     handle = malloc(sizeof(pcap_t*)*num_list);
     fp = malloc(sizeof(struct bpf_program)*num_list);
     for (int i = 0; i<num_list; i++){
         memset(&statistiche[i], 0, sizeof(stat_t));
-        statistiche[i].ids = malloc(sizeof(uint16_t)*DIMARRSTAT);
-        for (int j = 0; j<DIMARRSTAT; j++)
-            statistiche[i].ids[j] = 0;
-        delay_calibrator[i] = -1;
+        statistiche[i].pkt_information = malloc(sizeof(pkt_info)*DIMARRSTAT);
+        memset(statistiche[i].pkt_information, 0, sizeof(pkt_info)*DIMARRSTAT);
         statistiche[i].min = -1;
         memset(&fp[i], 0, sizeof(struct bpf_program));
     }
@@ -201,7 +197,6 @@ int main(int argc, const char * argv[]) {
         set_handler(dev_name, i, &fp[i], stringfilter, errbuf);
         if (!loopback)
             get_loopback(alldevs, dev_name, errbuf);
-        delay_calibrator[i] = -1;
         SYSFREE(notused,pthread_create(&listener[i],NULL,&listenerThread,id),0,"thread")
     }
     SYSFREE(notused,pthread_create(&stat_thr,NULL,&statThread,NULL),0,"thread statistiche") //ora sono pronto per le statistiche
@@ -232,11 +227,10 @@ int main(int argc, const char * argv[]) {
     free(fp);
     free(handle);
     for(int i=0; i<num_list; i++)
-        free(statistiche[i].ids);
+        free(statistiche[i].pkt_information);
     free(statistiche);
     free(listener);
     free(stringfilter);
-    free(delay_calibrator);
     free(mtxstat);
     clock_t end = clock();
     close(fd);

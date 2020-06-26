@@ -14,22 +14,22 @@
 void logging(const char *fmt, ...);
 
 //calcola PSNR e plotta il risultato, op indica se devo plottare un frame che sono stati decodifica (1) o meno (0)
-void plot_value(char path_send[], int gop_num, int FrameNo, int op);
+void plot_value(char path_send[], int gop_num, int FrameNo, int op, gop_info* info);
 
 //salva un png in un file
 void savePNG(AVPacket* packet, char PNGName[]);
 
 //MIA
 //Converta in png
-int decode_to_png(AVFrame *pFrame, int FrameNo, int gop_num);
+int decode_to_png(AVFrame *pFrame, int FrameNo, int gop_num, gop_info* info);
 
 //funzione simile a una trovata in rete
 //codifica i pixel in rgb24
-int decode_to_rgb24(AVFrame *pFrame, int pix_fmt, int FrameNo, int gop_num);
+int decode_to_rgb24(AVFrame *pFrame, int pix_fmt, int FrameNo, int gop_num, gop_info* info);
 
 //sempre dal link sotto in parte
 //prende ogni singolo frame o le prepara alla codifica in png
-int decode_packet(AVPacket *pPacket, AVCodecContext *pCodecContext, int gop_num);
+int decode_packet(AVPacket *pPacket, AVCodecContext *pCodecContext, int gop_num, gop_info* info);
 
 //https://github.com/leandromoreira/ffmpeg-libav-tutorial/blob/master/0_hello_world.c
 //decodifica un file h264 e crea AVPacket che contengono un frame

@@ -32,7 +32,7 @@ current_gop, last_frame = 0, 0  # ultimo gop e frame utilizzato per l'ultima imm
 not_in_current_gop = []  # vengono memorizzati qua i gop superiori per pater calcolare il psnr in seguito
 with open(path, 'w+') as f:
     writer = csv.writer(f)
-    writer.writerow(["#GOP_number", "frame_number_within_GOP", "PSNR", "distance_from_original_img"])
+    writer.writerow(["#GOP_number", "frame_number_within_GOP", "PSNR", "distance_from_original_img", "losted packet"])
 
 
 def sync_gop():
@@ -50,15 +50,15 @@ def sync_gop():
                     not_in_current_gop.remove(i)
                     cicla = True
             else:
-                im1, im2, temp_gop, temp_frame = i
+                im1, im2, temp_gop, temp_frame, arr = i
                 if temp_gop == current_gop and last_frame+1 == temp_frame:
                     last_frame = temp_frame
-                    psnr_calc(im1, im2, temp_gop, str(temp_frame))
+                    psnr_calc(im1, im2, temp_gop, str(temp_frame), arr)
                     not_in_current_gop.remove(i)
                     cicla = True
 
 
-def psnr_calc(im1, im2, gop, frame):
+def psnr_calc(im1, im2, gop, frame, arr):
     global dim, max, num_frame, last_image, path, distance
     if im1 != im2:  # se il path è identico si sono avuti problemi nella decodifica
         last_image = im1
@@ -84,7 +84,7 @@ def psnr_calc(im1, im2, gop, frame):
     max = dim
     with open(path, 'a') as f:
         writer = csv.writer(f)
-        writer.writerow([gop, frame, psnr, distance])
+        writer.writerow([gop, frame, psnr, distance, arr])
 
 
 def mypause(interval):
@@ -131,9 +131,9 @@ def get_input():
                 temp_frame = line[3]
                 if current_gop == temp_gop:
                     last_frame = int(temp_frame)
-                    psnr_calc(line[0], line[1], temp_gop, temp_frame)
+                    psnr_calc(line[0], line[1], temp_gop, temp_frame, line[4:])
                 else:
-                    not_in_current_gop.append((line[0], line[1], temp_gop, int(temp_frame)))
+                    not_in_current_gop.append((line[0], line[1], temp_gop, int(temp_frame), line[3:]))  # line[3] sono tuuti gli indici da 4 fino alla fine
 
 
 def init():

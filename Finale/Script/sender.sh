@@ -26,12 +26,18 @@ input[5]=$(awk '/^stat_port/{print $3}' "$1") #numero della porta delle statisti
 input[6]=$(awk '/^cartella_gop/{print $3}' "$1") #cartella dei gop lato sender
 input[7]=$(awk '/^cartella_immagini/{print $3}' "$1") #cartella immagini sender
 input[8]=$(awk '/^simulate_mode/{print $3}' "$1") #cartella immagini sender
-input[9]=$(awk '/^gamma_evento/{print $3}' "$1") #valore di gamma che mi indica in quale intervallo iniziare l'evento di perdita
-input[10]=$(awk '/^beta_evento/{print $3}' "$1") #valore di beta che mi indica in quale intervallo iniziare l'evento di perdita
-input[11]=$(awk '/^gamma_perdita/{print $3}' "$1") #valore di gamma che mi indica quanti pacchetti perdere
-input[12]=$(awk '/^beta_perdita/{print $3}' "$1") #valore di beta che mi indica quanti pacchetti perdere
-input[13]=$(awk '/^gamma_delay/{print $3}' "$1") #valore di gamma che mi indica il delay
-input[14]=$(awk '/^beta_delay/{print $3}' "$1") #valore di beta che mi indica il delay
+canali=$(awk '/^canale/{$1=$2=""; print $0" \\n"}' "$1") #stampa tutta la riga
+canali=$(echo "$var" | sed 's/#.*\\n//g') #elimina gli eventuali commenti dalla riga del canale
+j=9 # prossimo elemento da inserire
+for el in $canali; do # memorizzo valori alpha e scale per i canali
+	if [[ "$el" =~ ^[+-]?[0-9]+\.?[0-9]*$ ]]; then #controlla che sia un numero
+		input[i]=$el # vengono inseriti gli elementi canale per canale, quindi prima tutti i gamma valori per il canale 1 e poi si passa al successivo
+		((j++))
+	fi
+done
+if (( $i !=  ${input[3]}*6 )); then #controllo che siano stati tutti inseriti
+	echo "Numero di elementi per le distribuzioni errato"
+fi
 
 for i in "${input[@]}"
 do
@@ -54,7 +60,7 @@ do
 	[[ $last_char != "/" ]] && input[i]="${input[i]}/";
 done
 
-python3 Sender/Scheduler.py "${input[0]}" "${input[1]}" "${input[2]}" "${input[3]}" "${input[4]}" "${input[5]}" "${input[6]}" "${input[7]}" "${input[8]}" "${input[9]}" "${input[10]}" "${input[11]}" "${input[12]}" "${input[13]}" "${input[14]}"&
+python3 Sender/Scheduler.py ${input[@]}&
 clientpid+="$! "
 wait $clientpid
 

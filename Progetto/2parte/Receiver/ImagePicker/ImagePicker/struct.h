@@ -21,6 +21,12 @@ typedef struct gop_data {
     string payload;
 }gop;
 
+typedef struct packet_info {
+    uint16_t ids; // id di un pacchetto
+    double pkt_timestamp; // timestamp lato sender
+    long r_timestamp; // timestamp lato receiver
+} pkt_info;
+
 /* struttura per passare informazioni su un gop */
 typedef struct el_gop {
     //char path[64]; //path su cui sarà salvato il gop
@@ -36,6 +42,10 @@ typedef struct el_gop {
     int start28; // inizio del nal type di tipo 28, utile per sapere quando il nal_type 5 finisce
     int metadata_start; // indica da dove inizia il pacchetto sps e pps
     int next_metadata; // mi indica il punto di inizio del prossimo gop
+    uint16_t losted_packet[DIMARRSTAT]; //array dove ogni entry indica che pacchetti sono stati persi
+    int len_losted[DIMARRSTAT/2]; // ogni entry contiene il numero la lunghezza dei pacchetti persi dell i-esimo frame
+    int index_losted; // indica l'ultimo elemento usato da losted_packet
+    int index_len, incremented; // indica l'ultimo elemento usato da len_losted, la seconda variabile mi dice se l'indice è stato incrementato da un pacchetto che era la fine del frame
 }gop_info;
 
 /* struttura per passare pacchetti rtp */
@@ -54,20 +64,17 @@ typedef struct el_rtp {
 typedef struct{
     uint16_t perdita; //tasso di perdita
     uint16_t lunghezza; //lunghezza media perdita
-    int delay; //delay medio della finestra
+    float delay; //delay medio della finestra
+    float jitter;
     uint16_t ordine; //numero di pacchetti fuori ordine
     int number_of_pkt; //numero di pacchetti ricevuti
 }send_stat;
 
 typedef struct stats{
-    int perdita; //tasso di perdita
-    int lunghezza; //lunghezza media perdita
-    int delay; //delay medio della finestra
-    int ordine; //numero di pacchetti fuori ordine
     uint16_t min; //pacchetto con id più piccolo
     uint16_t max; //pacchetto con id più grande
     uint16_t id_accepted; //non si accettano id di un finestra passata, questo valore diventa il max value della finestra precedemte
-    uint16_t* ids; // contiene tutti i sequence number della finestra
+    pkt_info* pkt_information; // contiene i dati utili per calcolare le statistiche di un pacchetto
     uint8_t index; //ultimo elemento inserito
 }stat_t;
 

@@ -63,7 +63,7 @@ void* segnali(void *arg){
 }
 
 void* statThread(void* arg){
-    int i = 0, size, lenght;
+    int i = 0, j = 0, size, lenght, delay = 0;
     struct timespec ts = { 0, stat_interv*1000};
     stat_t temp; // usato per fare lo swap con statistiche e statistiche temp
     stat_t* statistiche_ref = malloc(sizeof(stat_t)*num_list); //contiene il riferimento alle vecchie statistiche
@@ -71,8 +71,8 @@ void* statThread(void* arg){
     send_stat* spedisci = malloc(sizeof(send_stat)*num_list);
     for(int i = 0; i<num_list;i++){
         memset(&statistiche_ref[i], 0, sizeof(stat_t));
-        statistiche_ref[i].ids = malloc(sizeof(uint16_t)*DIMARRSTAT);
-        memset(statistiche_ref[i].ids, 0, sizeof(uint16_t)*DIMARRSTAT);
+        statistiche_ref[i].pkt_information = malloc(sizeof(pkt_info)*DIMARRSTAT);
+        memset(statistiche_ref[i].pkt_information, 0, sizeof(pkt_info)*DIMARRSTAT);
         statistiche_ref[i].min = -1;
         memset(&spedisci[i], 0, sizeof(send_stat));
     }
@@ -88,35 +88,42 @@ void* statThread(void* arg){
             temp = statistiche[i];
             statistiche[i] = statistiche_ref[i];
             statistiche_ref[i] = temp;
-            delay_calibrator[i] = -1;
             pthread_mutex_unlock(&mtxstat[i]);
         }
         //inizio vero calcolo stastiche
         for (i = 0; i < num_list; i++) {
             if(statistiche_ref[i].index > 0){
-                spedisci[i].delay = statistiche_ref[i].delay/statistiche_ref[i].index;
-                for(int j = 0; j < statistiche_ref[i].index; j++)
-                    ids_copy[j] = statistiche_ref[i].ids[j]; //copia array
-                qsort(statistiche_ref[i].ids, statistiche_ref[i].index, sizeof(uint16_t), cmpfunc); // ordinalo
+                temp = statistiche_ref[i];
+                for(j = 0; j < temp.index; j++){
+                    ids_copy[j] = temp.pkt_information[j].ids; //copia array
+                    delay += temp.pkt_information[j].r_timestamp - temp.pkt_information[j].pkt_timestamp;
+                }
+                //calcolo delay
+                spedisci[i].delay = (float) delay/statistiche_ref[i].index;
+                qsort(statistiche_ref[i].pkt_information, statistiche_ref[i].index, sizeof(pkt_info), cmpfunc); // ordinalo
+                //calcolo jitter
+                spedisci[i].jitter = jitter_calculator(temp.pkt_information, temp.index);
                 //calcolo out of order
-                spedisci[i].ordine = stat_out_of_order(statistiche_ref[i].ids, ids_copy, statistiche_ref[i].index);
+                spedisci[i].ordine = stat_out_of_order(temp.pkt_information, ids_copy, statistiche_ref[i].index);
                 //calcolo lunghezza
-                spedisci[i].lunghezza = stat_lunghezza(statistiche_ref[i].ids, statistiche_ref[i].index);
+                spedisci[i].lunghezza = stat_lunghezza(temp.pkt_information, statistiche_ref[i].index);
+                //calcolo numero di perdite
                 size = statistiche_ref[i].index - 1; // numero di elementi nell'array - 1(l'estemo)
-                lenght = statistiche_ref[i].ids[size] - statistiche_ref[i].ids[0]; // max - min
+                lenght = temp.pkt_information[size].ids - temp.pkt_information[size].ids; // max - min
                 spedisci[i].perdita = size > lenght ? size - lenght : lenght - size;
                 spedisci[i].number_of_pkt = statistiche_ref[i].index;
             }
             else {
                 spedisci[i].perdita = -1;
                 spedisci[i].delay = -1;
+                spedisci[i].jitter = -1;
                 spedisci[i].lunghezza = -1;
                 spedisci[i].ordine = -1;
                 spedisci[i].number_of_pkt = 0;
             }
             statistiche_ref[i].index = 0;
-            statistiche_ref[i].delay = 0;
             statistiche_ref[i].min = -1;
+            delay = 0;
         }
         // spedisci al server
         send_to_server(sockfd, spedisci);
@@ -125,7 +132,7 @@ void* statThread(void* arg){
     if (sockfd != -1)
         close(sockfd);
     for (i=0; i<num_list; i++)
-        free(statistiche_ref[i].ids)
+        free(statistiche_ref[i].pkt_information);
     free(statistiche_ref);
     free(ids_copy);
     free(spedisci);

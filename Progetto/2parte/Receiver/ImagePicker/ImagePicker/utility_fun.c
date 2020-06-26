@@ -48,13 +48,13 @@ int set_stat_sock(){
 
 //funzione di comparazione per il qsort
 int cmpfunc (const void * a, const void * b){
-   return ( *(uint16_t*)a - *(uint16_t*)b );
+    return ( (*(pkt_info*)a).ids - (*(pkt_info*)b).ids );
 }
 
-uint16_t stat_lunghezza(uint16_t arr[], int index){
+uint16_t stat_lunghezza(pkt_info arr[], int index){
     int num_lost, num_buchi = 0, tot = 0, j;
     for (j = 1; j < index; j++) {
-        num_lost = arr[j] - arr[j-1] - 1;
+        num_lost = arr[j].ids - arr[j-1].ids - 1;
         if (num_lost > 0)
             num_buchi++;
         tot += num_lost;
@@ -64,25 +64,37 @@ uint16_t stat_lunghezza(uint16_t arr[], int index){
     return 0;
 }
 
-uint16_t stat_out_of_order(uint16_t ord[], uint16_t not_ord[], int dim){
+uint16_t stat_out_of_order(pkt_info ord[], uint16_t not_ord[], int dim){
     int i = 0, j = 0;
     uint16_t out = 0, prec, curr; //prec contiene l'ids corrente
     for (i = 0; i < dim; i++) {
-        if (ord[i] != not_ord[i]) {
+        if (ord[i].ids != not_ord[i]) {
             out++;
             prec = not_ord[i];
             j = i + 1;
-            while (not_ord[j] != ord[i]) { // shift a sinistra finchè non si trova l'elemento corrispondente
+            while (not_ord[j] != ord[i].ids) { // shift a sinistra finchè non si trova l'elemento corrispondente
                 curr = not_ord[j];
                 not_ord[j] = prec;
                 j++;
                 prec = curr;
             }
-            not_ord[i] = ord[i];
+            not_ord[i] = ord[i].ids;
             not_ord[j] = prec;
         }
     }
     return out;
+}
+
+float jitter_calculator(pkt_info el[], int dim){
+    pkt_info infj, infi; // variabili di lavoro per rendere più leggibile il calcolo del jitter
+    float d_value = 0, jitter = 0;
+    for(int j = 1; j < dim; j++){
+        infj = el[j];
+        infi = el[j-1];
+        d_value = fabs((infj.r_timestamp-infj.pkt_timestamp)-(infi.r_timestamp-infi.pkt_timestamp));
+        jitter = jitter + (d_value - jitter)/JITTER_DIV;
+    }
+    return jitter;
 }
 
 void send_to_server(int sockfd, send_stat spedisci[]){
@@ -98,6 +110,29 @@ rtp* delete_and_get_next(rtp* el, uint16_t* from, int end_seq){
         el = find_hash(from);
     }
     return el;
+}
+
+void fill_losted_packet(uint16_t* prec, uint16_t* from, rtp* el, gop_info* info){
+    while ((*prec)+1 != *from) {
+        info->losted_packet[info->index_losted] = *prec;
+        info->index_losted++;
+        info->len_losted[info->index_len]++;
+        (*prec)++;
+    }
+    *prec = *from;
+    //Attenzione, assumo che  mi arrivi almeno una fine o un inizio di ogni frame
+    if (el->state == 128) { // state vale 128 se è un nuovo frame 64 se il frame finisce, 0 altrimenti
+        if(info->incremented) // è già stato incrementato precedentemente
+            info->incremented = 0;
+        else
+            info->index_len++;
+    }
+    else if (el->state == 64){
+        info->incremented = 1;
+        info->index_len++;
+    }
+    else
+        info->incremented = 0;
 }
 
 int writen(int fd, void *buf, size_t size) {

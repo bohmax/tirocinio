@@ -7,15 +7,15 @@ from datetime import datetime
 class Stat(Structure):  # Struttura che deve essere identica alla struttura send_stat definita in struct.h
     _fields_ = [("perdita", c_uint16),
                 ("lunghezza", c_uint16),
-                ("delay", c_float),
-                ("jitter", c_float),
+                ("delay", c_double),
+                ("jitter", c_double),
                 ("ordine", c_uint16),
                 ("num_of_pkt", c_int)]
 
 
 def stat(args):
     data = datetime.now()
-    path = 'statistics/stat/' + str(data) + '.csv'
+    path = '/Users/maxuel/PycharmProjects/tirocinio/Progetto/2parte/Sender/statistics/stat/' + str(data) + '.csv'
     queue = args[0]
     ip = args[1]
     port = args[2]
@@ -45,4 +45,4 @@ def stat(args):
                         writer.writerow(["", "", "", "", "", ""])
                     except KeyboardInterrupt:
                         break
-        print("Esco dalle statistiche")
+        print("Esce dalle statistiche")

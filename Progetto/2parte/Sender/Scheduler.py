@@ -1,7 +1,7 @@
 from scapy.layers.inet import UDP, IP
 from scapy.layers.rtp import RTP
-from Operatore import Operatore
 from Sender import Sender
+from Operatore import Operatore
 import Image_Handler
 import Statistiche
 from scapy.all import *
@@ -41,52 +41,55 @@ def inizializza():
     global pcap_path, interface, ip_receiver, gop_dir, img_dir, num_porte, porta_inoltro, port_stat, simula
     global alpha_evento, scale_evento, alpha_perdita, scale_perdita, alpha_delay, scale_delay
     pcap_path = sys.argv[1]
-    interface = sys.argv[2]
-    ip_receiver = sys.argv[3]
-    num_porte = int(sys.argv[4])
-    porta_inoltro = int(sys.argv[5])
-    port_stat = int(sys.argv[6])
-    gop_dir = sys.argv[7]
-    img_dir = sys.argv[8]
-    simula = int(sys.argv[9])
+    ip_receiver = sys.argv[2]
+    num_porte = int(sys.argv[3])
+    porta_inoltro = int(sys.argv[4])
+    port_stat = int(sys.argv[5])
+    gop_dir = sys.argv[6]
+    img_dir = sys.argv[7]
+    simula = int(sys.argv[8])
     for j in range(num_porte):
-        alpha_evento.append(float(sys.argv[10]))
-        scale_evento.append(float(sys.argv[11]))
-        alpha_perdita.append(float(sys.argv[12]))
-        scale_perdita.append(float(sys.argv[13]))
-        alpha_delay.append(float(sys.argv[14]))
-        scale_delay.append(float(sys.argv[15]))
+        num_var = (j * 6)
+        alpha_evento.append(float(sys.argv[9 + num_var]))
+        scale_evento.append(float(sys.argv[10 + num_var]))
+        alpha_perdita.append(float(sys.argv[11 + num_var]))
+        scale_perdita.append(float(sys.argv[12 + num_var]))
+        alpha_delay.append(float(sys.argv[13 + num_var]))
+        scale_delay.append(float(sys.argv[14 + num_var]))
 
 
-def canale(queue, nome, interface, ip, porta, simulato, alpha_e, scale_e, alpha_p, scale_p, alpha_d, scale_d):
-    operatore = Operatore(name=nome, simulate=simulato, alpha_e=alpha_e, scale_e=scale_e, alpha_p=alpha_p,
-                          scale_p=scale_p, alpha_d=alpha_d, scale_d=scale_d)
-    sender = Sender(operatore, interface, ip, porta)
+def canale(queue, nome, ip, porta, simulato, alpha_e, scale_e, alpha_p, scale_p, alpha_d, scale_d):
+    sender = Sender(simulate=simulato, alpha_e=alpha_e, scale_e=scale_e, alpha_p=alpha_p,
+                    scale_p=scale_p, alpha_d=alpha_d, scale_d=scale_d)
+    operatore = Operatore(sender, ip, porta, nome)
     while True:
         try:
             pkt, index = queue.get()
             if pkt is None:
                 break
-            sender.send_setted(pkt, index)
+            operatore.send(pkt, index)
         except KeyboardInterrupt:
             break
-    queue.put(sender.getOperatore().getNotSent())
+    sender.getQueue().put((False, None))
+    sender.getThr().join()
+    queue.put(operatore.getSender().getNotSent())
 
 
 if __name__ == "__main__":
     process_list = []
     queue_list = []
+    inizializza()
     simulate = False
     if simula > 0:
         simulate = True
-    sender = Sender(None, interface, ip_receiver, 0)  # non si spedirà mai con questo sender, usato solo per settare un pacchetto
+    operatore = Operatore(None, ip_receiver, 0, None)  # non si spedirà mai con questo sender, usato solo per settare un pacchetto
     for i in range(num_porte):
-        if i >= len(nomi_operatori): # si potrebbe anche eliminare l'arrai nomi operatori
+        if i >= len(nomi_operatori):  # si potrebbe anche eliminare l'arrai nomi operatori
             name = nomi_operatori[2]
         else:
             name = nomi_operatori[i]
         queue_list.append(Queue())
-        process_list.append(Process(target=canale, args=(queue_list[i], name, interface, ip_receiver, porta_inoltro,
+        process_list.append(Process(target=canale, args=(queue_list[i], name, ip_receiver, porta_inoltro,
                                                          simulate, alpha_evento[i], scale_evento[i], alpha_perdita[i],
                                                          scale_perdita[i], alpha_delay[i], scale_delay[i])))
         process_list[i].start()
@@ -95,9 +98,9 @@ if __name__ == "__main__":
     queue_stat = Queue()
     queue_gop = Queue()
     esci = False
-    stat_process = Process(target=Statistiche.stat, args=((queue_stat, sender.get_srcIP(), port_stat, num_porte), ))
-    #image_process = Process(target=Image_Handler.analyzer, args=((queue_gop, pcap_path, gop_dir, img_dir), )) # da usare
-    #image_process.start() # da usare
+    stat_process = Process(target=Statistiche.stat, args=((queue_stat, ip_receiver, port_stat, num_porte), ))
+    #image_process = Process(target=Image_Handler.analyzer, args=((queue_gop, pcap_path, gop_dir, img_dir), ))  # da usare
+    #image_process.start()  # da usare
     stat_process.start()
     try:
         queue_stat.get()
@@ -108,19 +111,19 @@ if __name__ == "__main__":
     start = time.time()
     start_time = 0
     pkt_start_time = packets[0].time
-    numero_totale_pkt = 0
+    #numero_totale_pkt = 0
     bind_layers(UDP, RTP)
     try:
-        for index, pkt in enumerate(PcapReader(pcap_path)):
-            if IP in pkt and RTP in pkt:
-                numero_totale_pkt = index
-                if start_time == 0:  # per avere uno start time più fedele possibile
-                    start_time = time.time()
-                pkt_time = pkt.time
-                pkt = sender.set_packet(pkt)
-                timer.nsleep(timer.delay_calculator(pkt_time, pkt_start_time, start_time)*0.85)  # in modo da svegliarsi un 15% prima e poter eseguire più invii senza problemi
-                for i in queue_list:
-                    i.put((pkt, index))
+        with PcapReader(pcap_path) as pcap_reader:
+            for index, pkt in enumerate(pcap_reader):
+                if IP in pkt and RTP in pkt:
+                    #numero_totale_pkt = index
+                    if start_time == 0:  # per avere uno start time più fedele possibile
+                        start_time = time.time()
+                    send = operatore.set_pkt(pkt)
+                    timer.nsleep(timer.delay_calculator(pkt.time, pkt_start_time, start_time)*0.85)  # in modo da svegliarsi un 15% prima e poter eseguire più invii senza problemi
+                    for i in queue_list:
+                        i.put((send, index))
     except KeyboardInterrupt:
         pass
 

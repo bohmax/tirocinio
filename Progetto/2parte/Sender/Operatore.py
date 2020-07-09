@@ -1,109 +1,61 @@
-import math
-import random
-import struct
-import time
-
-from scapy.packet import Raw
-from scipy.stats import gamma
+from scapy.all import *
+import socket
+from scapy.layers.inet import IP, UDP
+from scapy.layers.l2 import Ether, Loopback
 
 
 class Operatore:
 
-    #contiene gli indici dei pacchetti non inviati
-    _pkt_losted = []
-
     """
-    @param name: nome dell'operatore
-    @param gamma_e: valore gamma per decidere se si deve entrare nell'evento
-    @param beta_e: valore gamma per decidere se si deve entrare nell'evento
-    @param gamma_p: valore gamma per decidere quanti pacchetti perdere
-    @param beta_p: valore beta per decidere quanti pacchetti perdere
-    @param loss: probabilità con la quale i pacchetti vengono droppati per motivi legati alla rete
-    @param delay: ritardi tra un pacchetto e l'altro
+    @param sender: canale su cui spedire il pacchetto
+    @param ip: ip di destinazione su cui spedire i pacchetti
+    @param port: porta su cui vengono spediti i pacchetti
     """
-    def __init__(self, name, simulate, alpha_e, scale_e, alpha_p, scale_p, alpha_d, scale_d):
-        self._name = name
-        self._simulate = simulate
-        self._alpha_e = alpha_e
-        self._scale_e = scale_e
-        self._alpha_p = alpha_p
-        self._scale_p = scale_p
-        self._alpha_d = alpha_d
-        self._scale_d = scale_d
-        self._delay = gamma.rvs(alpha_d, scale=scale_d, size=1)
-        self._evento = gamma.rvs(alpha_e, scale=scale_e, size=1)
-        self._perdita = gamma.rvs(alpha_p, scale=scale_p, size=1)
-        self._delay_prec = 0
-        self._counter = 0  # numero di paccheti da scartare
-        self._indice = 0  # numero di pacchetti inviati
-        self._delay_list = []  # lista in cui verrano inseriti i pacchetti da non spedire subito
 
-    def send(self, socket, pkt, indice):
-        if self._simulate:
-            ret = self.send_simulate(socket, pkt, indice)
-            if ret == 0:
-                self._delay = gamma.rvs(self._alpha_d, scale=self._scale_d, size=1000)
-                self._evento = gamma.rvs(self._alpha_e, scale=self._scale_e, size=1000)
-                self._perdita = gamma.rvs(self._alpha_p, scale=self._scale_p, size=1000)
-        else:  # ci sarà un ritardo e una perdita reale
-            pkt = pkt/Raw(bytearray(struct.pack("d", time.time())))
-            self.send_pkt(socket, pkt)
+    def __init__(self, sender, ip, port, nome):
+        if sender is not None:
+            self._address = (ip, port)
+            self._socket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
+            self._sender = sender
+            self._ip = ip
+            self._port = port
+            self._name = nome
 
-    def send_simulate(self, socket, pkt, indice):
-        index = self._indice % 1000
-        self.send_delayed(socket)  # spedisce i vecchi pacchetti
-        if self._counter <= 0:  # mi sto chiedendo se non ho pacchetti da scartare
-            rng = random.random()
-            if rng > self._evento[index]:
-                val = self._delay[index]  # calcola il delay
-                delay = val - self._delay_prec
-                if delay < 0:
-                    delay = 0
-                self._delay_prec = delay
-                pkt = pkt / Raw(bytearray(struct.pack("d", time.time())))
-                self._delay_list.append((pkt, time.time() + delay))
-            else:  # entra nell'evento perdita
-                self._counter = math.ceil(self._perdita[index]) - 1
-                self._pkt_losted.append(indice)
-            self._indice += 1
-        else:  # se ho pacchetti da scartare a causa di un evento perdita
-            self._counter -= 1
-            self._pkt_losted.append(indice)
-        return index
+    def send(self, pkt, indice):
+        self._sender.send(self._socket, self._address, pkt, indice)
 
-    def send_delayed(self, socket):
-        for i in reversed(self._delay_list):
-            el, times = i
-            if time.time() > times:
-                self.send_pkt(socket, el)
-                self._delay_list.remove(i)
+    def set_pkt(self, pkt):
+        return bytes(pkt[UDP].payload)
 
-    def send_pkt(self, socket, pkt):
-        try:
-            socket.send(pkt)
-        except KeyboardInterrupt:
-            pass
+    def setIP(self, dstip):
+        self._ip = dstip
 
-    def setName(self, name):
-        self._name = name
+    def setPort(self, port):
+        self._port = port
 
-    def setDelay(self, delay):
-        self._delay = delay
+    def getAddress(self):
+        return self._address
+
+    def getSocket(self):
+        return self._socket
+
+    def getIP(self):
+        return self._ip
+
+    def getPort(self):
+        return self._port
+
+    def getSender(self):
+        return self._sender
 
     def getName(self):
         return self._name
 
-    #def getLoss(self):
-    #    return self._loss
-
-    def getDelay(self):
-        return self._delay
-
-    def getNotSent(self):
-        return self._pkt_losted
+    def setName(self, name):
+        self._name = name
 
     def __repr__(self):
-        return "<Operatore con nome: %s, ha un delay di %s>" % (self._name, self._delay)
+        return "<Sender con ip: %s, porta %s>" % (self._ip, self._port)
 
     def __str__(self):
-        return "Nome: %s, ha un delay di %s" % (self._name, self._delay)
+        return "Sender con ip: %s, porta %s" % (self._ip, self._port)

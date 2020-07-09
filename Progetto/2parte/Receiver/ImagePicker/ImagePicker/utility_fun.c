@@ -121,6 +121,7 @@ void fill_losted_packet(uint16_t* prec, uint16_t* from, rtp* el, gop_info* info)
     }
     *prec = *from;
     //Attenzione, assumo che  mi arrivi almeno una fine o un inizio di ogni frame
+    if(el){
     if (el->state == 128) { // state vale 128 se è un nuovo frame 64 se il frame finisce, 0 altrimenti
         if(info->incremented) // è già stato incrementato precedentemente
             info->incremented = 0;
@@ -133,6 +134,7 @@ void fill_losted_packet(uint16_t* prec, uint16_t* from, rtp* el, gop_info* info)
     }
     else
         info->incremented = 0;
+    }
 }
 
 int writen(int fd, void *buf, size_t size) {

@@ -31,7 +31,7 @@ void send_close(list** testa, list** coda, pthread_mutex_t* mtx, pthread_cond_t*
     pthread_mutex_unlock(mtx);
 }
 
-void* segnali(void *arg){
+void* Segnali(void *arg){
     int ris;
     printf("Avviato\n");
     if(sigwait(&sigset_usr, &ris)!=0){
@@ -96,7 +96,7 @@ void* statThread(void* arg){
                 temp = statistiche_ref[i];
                 for(j = 0; j < temp.index; j++){
                     ids_copy[j] = temp.pkt_information[j].ids; //copia array
-                    delay += temp.pkt_information[j].r_timestamp - temp.pkt_information[j].pkt_timestamp;
+                    delay += (float) temp.pkt_information[j].r_timestamp - temp.pkt_information[j].pkt_timestamp;
                 }
                 //calcolo delay
                 spedisci[i].delay = (float) delay/statistiche_ref[i].index;
@@ -109,7 +109,7 @@ void* statThread(void* arg){
                 spedisci[i].lunghezza = stat_lunghezza(temp.pkt_information, statistiche_ref[i].index);
                 //calcolo numero di perdite
                 size = statistiche_ref[i].index - 1; // numero di elementi nell'array - 1(l'estemo)
-                lenght = temp.pkt_information[size].ids - temp.pkt_information[size].ids; // max - min
+                lenght = temp.pkt_information[size].ids - temp.pkt_information[0].ids; // max - min
                 spedisci[i].perdita = size > lenght ? size - lenght : lenght - size;
                 spedisci[i].number_of_pkt = statistiche_ref[i].index;
             }
@@ -192,7 +192,7 @@ void* ReaderPacket(void* arg){
             else{ // pacchetti da scartare, inviati senza pps e sps
                 *from = el->metadata_start;
                 rtp* pkt = find_hash(from);
-                while (pkt && pkt->nal_type != 5 )
+                while (pkt && pkt->slice_type != 5 )
                     pkt = delete_and_get_next(pkt, from, el->next_metadata-1);
                 freeGOP((void**)&el);
             }

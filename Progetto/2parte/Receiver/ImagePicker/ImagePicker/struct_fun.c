@@ -56,7 +56,7 @@ rtp* setElRTP(u_char* buf, int size, long timestamp, int npkt, int from_thr){
     new->r_timestamp = timestamp;
     new->n_pkt = npkt;
     new->from_thr = from_thr;
-    new->nal_type = 0;
+    new->slice_type = 0;
     new->state = 0;
     new->decoder = 0;
     new->sent = 0;

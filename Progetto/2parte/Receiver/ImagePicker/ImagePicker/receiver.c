@@ -95,16 +95,16 @@ int addPacketToGOP(u_char* rtpdata, int rtpdata_len, uint16_t seq_num, rtp* el){
     unsigned int end_bit = rtpdata[1] & 0x40;  // 64 se e' l ultimo pacchetto 0 altrimenti
     unsigned int reserved = rtpdata[1] & 0x20 >> 5;
     unsigned int nal_type = rtpdata[1] & 0x1F;
-    el->nal_type = nal_type;
+    el->slice_type = nal_type;
     el->state = start_bit == 128 ? start_bit : end_bit;
     if (nal_type == 5){ //nuovo gop, devo essere sicuro che si riferisce al gop corrente
         pthread_mutex_lock(&mtx_info);
         if (info) {
-            if (info->gop_over == -1) { //se questa condizione è falsa qualche altro thread ha già inserito tutte le informazioni utili per questo gop
+            if (info->gop_over == -1) { //se questa condizione è falsa qualche altro thread ha già inserito tutte le informazioni utili per questo gop, è quindi pronto all'utilizzo
                 if (seq_num < info->start_seq && seq_num > info->end_last_gop) {
                     info->start_seq = seq_num;
                 }
-                else if (info->after_5 && seq_num > info->start28){
+                else if (info->after_5 && seq_num > info->startP){
                     info->gop_over = info->end_seq;
                     info->end_seq = seq_num;
                     return_value = seq_num;
@@ -126,7 +126,7 @@ int addPacketToGOP(u_char* rtpdata, int rtpdata_len, uint16_t seq_num, rtp* el){
         if (info) {
             if (!info->after_5 && seq_num > info->accepted28) {
                 info->after_5 = 1;
-                info->start28 = seq_num;
+                info->startP = seq_num;
                 info->end_seq = seq_num;
             }
             if(info->gop_over == -1 && info->end_seq < seq_num) // se gop over != 0 è inutile aggiornare end seq, tanto il decoder controlla gop over per fermarsi
@@ -180,7 +180,7 @@ int workOnPacket(rtp* el, int stat_index){
         if (fragment_type == 28) //dati per il GOP
             ris = addPacketToGOP(rtpdata, rtpdata_len, seq, el);
         else{
-            el->nal_type = fragment_type; //non è esattamente il nal type ma posso inserire il valore qui
+            el->slice_type = fragment_type; //in questo caso sto memorizzando il type del NAL header, occhio!
             pthread_mutex_lock(&mtx_info);
             if (info->metadata_start > seq && seq < info->start_seq)
                 info->metadata_start = seq;
@@ -231,7 +231,7 @@ void save_GOP(uint16_t *from, gop_info* info){
         printf("Error: %s\n", strerror(errno));
     rtp* el = find_hash(from);
     //add(&payload, metadata.value, metadata.size); //se un giorno si decidesse di usare questa soluzione, solo un fwrite alla fine
-    while (el && el->nal_type != 5){ // cicla finchè i pacchetti di header non finiscono
+    while (el && el->slice_type != 5){ // cicla finchè i pacchetti di header non finiscono
         el = set_header(el, from, fix, info->start_seq);
         num_hdr++;
     }
@@ -240,14 +240,13 @@ void save_GOP(uint16_t *from, gop_info* info){
         payload.size = 0;
     }
     fwrite(metadata.value, 1, metadata.size, f);
-    prec = *from;
-    *from = info->start_seq;
+    prec = *from - 1;
     fill_losted_packet(&prec, from, el, info);
-    while(el && el->nal_type == 5){ // copia tutto il pacchetto header
+    while(el && el->slice_type == 5){ // copia tutto il pacchetto header
         el = save_packet(f, el, from, fix, info->end_seq);
         fill_losted_packet(&prec, from, el, info);
     }
-    while (el && el->nal_type < 5) { //copia finchè non trova un nuovo GOP
+    while (el && el->slice_type < 5) { //copia finchè non trova un nuovo GOP
         el = save_packet(f, el, from, fix, info->end_seq);
         fill_losted_packet(&prec, from, el, info);
     }

@@ -17,26 +17,47 @@ if [ "$#" -ne 1 ]; then
     echo "$helper"
     exit 1
 fi
-input[0]=$(awk '/^pcap_file/{print $3}' "$1") #posizione dei file pcap
-input[1]=$(awk '/^interfaccia_di_rete/{print $3}' "$1") #interfaccia di rete in cui inserire e sniffare pacchetti
-input[2]=$(awk '/^ip_receiver/{print $3}' "$1") #ip su cui inviare i pacchetti dal sender
-input[3]=$(awk '/^numero_di_canali/{print $3}' "$1") #numero di canali
-input[4]=$(awk '/^from_port/{print $3}' "$1") #numero della porta
-input[5]=$(awk '/^stat_port/{print $3}' "$1") #numero della porta delle statistiche
-input[6]=$(awk '/^cartella_gop/{print $3}' "$1") #cartella dei gop lato sender
-input[7]=$(awk '/^cartella_immagini/{print $3}' "$1") #cartella immagini sender
-input[8]=$(awk '/^simulate_mode/{print $3}' "$1") #cartella immagini sender
-canali=$(awk '/^canale/{$1=$2=""; print $0" \\n"}' "$1") #stampa tutta la riga
-canali=$(echo "$var" | sed 's/#.*\\n//g') #elimina gli eventuali commenti dalla riga del canale
-j=9 # prossimo elemento da inserire
-for el in $canali; do # memorizzo valori alpha e scale per i canali
-	if [[ "$el" =~ ^[+-]?[0-9]+\.?[0-9]*$ ]]; then #controlla che sia un numero
-		input[i]=$el # vengono inseriti gli elementi canale per canale, quindi prima tutti i gamma valori per il canale 1 e poi si passa al successivo
+removed_comment=$(grep -o '^[^#]*' "$1")
+input[0]=$(echo "$removed_comment" | awk '/^pcap_src_file/{print $3}') #posizione dei file pcap
+input[1]=$(echo "$removed_comment" | awk '/^receiver_IP/{print $3}') #ip su cui inviare i pacchetti dal sender
+input[2]=$(echo "$removed_comment" | awk '/^number_of_links/{print $3}') #numero di canali
+input[3]=$(echo "$removed_comment" | awk '/^port/{print $3}') #numero della porta
+input[4]=$(echo "$removed_comment" | awk '/^incoming_feedback_port/{print $3}') #numero della porta delle statistiche
+input[5]=$(echo "$removed_comment" | awk '/^GOP_folder/{print $3}') #cartella dei gop lato sender per i GOP
+input[6]=$(echo "$removed_comment" | awk '/^VF_folder/{print $3}') #cartella immagini sender per le immagini
+input[7]=$(echo "$removed_comment" | awk '/^simulator/{print $3}') #cartella immagini sender
+canali=$(echo "$removed_comment" | awk '/^channels_stats/{$1=$2=""; print $0" \\n"}') #stampa tutta la riga per le statistiche
+var=$(echo $var | tr -d "[]") # rimuove le parentesi quadre di channels stats
+var=$(echo "$var" | sed 's.; .;.g') # Si elimina lo spazio successivo a ;
+IFS=';' read -a arr <<< "$var" # crea un array per ogni ;
+i=0
+j=0
+if [[ simulator -eq 1 ]]; then
+	for el in "${arr[@]}"
+	do
+		i=0
+		for val in $el
+		do
+			if [[ "$val" =~ ^[+-]?[0-9]+\.?[0-9]*$ ]]; then #controlla se è un numero
+				input[i]=$val
+				((i++))
+			fi
+		done
+		if [[ !($i -eq 6) ]]; then
+			echo "Numero di argomenti delle statistiche delle porte sbagliato"
+			exit 1
+		fi
 		((j++))
-	fi
-done
-if (( $i !=  ${input[3]}*6 )); then #controllo che siano stati tutti inseriti
-	echo "Numero di elementi per le distribuzioni errato"
+	done
+	if [[ !($j -eq ${input[2]}) ]]; then
+			echo "Il numero di canali non coincide con il numero di parametri delle statistiche"
+			exit 1
+		fi
+else
+	for i in $(seq 1 $num)
+	do
+		input[$i-1]=0
+	done
 fi
 
 for i in "${input[@]}"
@@ -47,7 +68,7 @@ do
 	fi
 done
 
-for i in {6..7}
+for i in {5..6}
 do
 	if [ ! -d "${input[$i]}" ]; then # controlla che la directory non esista, se non esistono le crea
 		if ! mkdir -p "${input[$i]}" ; then
@@ -57,7 +78,7 @@ do
 	fi
 	length=${#input[i]}
 	last_char=${input[i]:length-1:1}
-	[[ $last_char != "/" ]] && input[i]="${input[i]}/";
+	[[ $last_char != "/" ]] && input[i]="${input[i]}/";  #aggiunge uno slash finale nei path
 done
 
 python3 Sender/Scheduler.py ${input[@]}&

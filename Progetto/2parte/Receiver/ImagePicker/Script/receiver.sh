@@ -17,18 +17,18 @@ if [ "$#" -ne 1 ]; then
     echo "$helper"
     exit -1
 fi
-
-input[0]=$(awk '/^interfaccia_di_rete/{print $3}' "$1") #interfaccia di rete in cui inserire e sniffare pacchetti
-input[1]=$(awk '/^ip_sender/{print $3}' "$1") #ip per spedire le statistiche al sender
-input[2]=$(awk '/^numero_di_canali/{print $3}' "$1") #numero di canali
-input[3]=$(awk '/^from_port/{print $3}' "$1") #sniffa pacchetti dalla porta x fino alla porta x+numero canali
-input[4]=$(awk '/^stat_port/{print $3}' "$1") #numero della porta delle statistiche
-input[5]=$(awk '/^video_port/{print $3}' "$1") #numero della porta per inoltrare i pacchetti al player
-input[6]=$(awk '/^cartella_rec_gop/{print $3}' "$1") #cartella dei gop lato receiver
-input[7]=$(awk '/^cartella_rec_immagini/{print $3}' "$1") #cartella delle immagini lato receiver
-input[8]=$(awk '/^cartella_immagini_s/{print $3}' "$1") #cartella immagini sender
-input[9]=$(awk '/^lunghezza_finestra_statistiche/{print $3}' "$1") #lunghezza della finestra delle statistiche
-input[10]=$(awk '/^num_decoder_thread/{print $3}' "$1") #numero dei thread del decoder
+removed_comment=$(grep -o '^[^#]*' "$1")
+input[0]=$(echo "$removed_comment" | awk '/^nic/{print $3}') #interfaccia di rete in cui inserire e sniffare pacchetti
+input[1]=$(echo "$removed_comment" | awk '/^sender_IP/{print $3}') #ip per spedire le statistiche al sender
+input[2]=$(echo "$removed_comment" | awk '/^number_of_links/{print $3}') #numero di canali
+input[3]=$(echo "$removed_comment" | awk '/^port/{print $3}') #sniffa pacchetti dalla porta x fino alla porta x+numero canali
+input[4]=$(echo "$removed_comment" | awk '/^feedback_port_at_sender/{print $3}') #numero della porta delle statistiche
+input[5]=$(echo "$removed_comment" | awk '/^video_port/{print $3}') #numero della porta per inoltrare i pacchetti al player
+input[6]=$(echo "$removed_comment" | awk '/^GOP_folder/{print $3}') #cartella dei gop lato receiver
+input[7]=$(echo "$removed_comment" | awk '/^VF_folder/{print $3}') #cartella delle immagini lato receiver
+input[8]=$(echo "$removed_comment" | awk '/^original_VF_folder/{print $3}') #cartella immagini sender
+input[9]=$(echo "$removed_comment" | awk '/^window_length/{print $3}') #lunghezza della finestra delle statistiche
+input[10]=$(echo "$removed_comment" | awk '/^decoding_threads/{print $3}') #numero dei thread del decoder
 
 for i in "${input[@]}"
 do

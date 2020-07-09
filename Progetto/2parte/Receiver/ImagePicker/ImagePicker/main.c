@@ -46,7 +46,7 @@ int num_list = 1, from_port = 5000, stat_port = DPORT, video_port = DPORT,stat_i
 char ip_sender[DIM_IP];
 
 void set_pipe(){
-    pipe_plot = popen("python3 ImagePicker/plot.py", "w");
+    pipe_plot = popen("python3 ImagePicker1/plot.py", "w");
     if (pipe_plot == NULL) {
         printf("popen error\n");
         exit(1);
@@ -185,7 +185,7 @@ int main(int argc, const char * argv[]) {
     info = setElGOP(-1, -1); //primo gop, parte da 0
     hash_packet = icl_hash_create(HSIZE, uint16_hash_function, uint_16t_key_compare);
     //avvio thread che gestisce i segnali
-    SYSFREE(notused,pthread_create(&segnal,NULL,&segnali,NULL),0,"thread")
+    SYSFREE(notused,pthread_create(&segnal,NULL,&Segnali,NULL),0,"thread")
     SYSFREE(notused,pthread_create(&order,NULL,&ReaderPacket,NULL),0,"thread") // ctrl-c to stop sniffing
     //device = find_device(alldevs, dev_name); //se è null provo a leggere offline
     printf("Sniffing on device: %s\n", dev_name);

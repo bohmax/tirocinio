@@ -32,7 +32,7 @@ void send_to_server(int sockfd, send_stat spedisci[]);
 //ottieni il prossimo pacchetto utile da utilizzare per salvare il GOP
 rtp* delete_and_get_next(rtp* el, uint16_t* from, int end_seq);
 
-// riempie l'array contentente i pacchetti persi, prec sarà uguale a form a fine procedura
+// riempie l'array contentente i pacchetti persi di el_gop, prec sarà uguale a form a fine procedura
 void fill_losted_packet(uint16_t* prec, uint16_t* from, rtp* el, gop_info* info);
 
 /* IL CALCOLO DEL PSNR VIENE FATTO SU PYTHON NELLO SCRIPT DEL GRAFICO DEL PSNR NON QUA */

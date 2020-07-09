@@ -294,7 +294,8 @@ int create_image(gop_info* info){
         if (pPacket->stream_index == video_stream_index)
             decode_packet(pPacket, pCodecContext, info->gop_num, info);
         // https://ffmpeg.org/doxygen/trunk/group__lavc__packet.html#ga63d5a489b419bd5d45cfd09091cbcbc2
-        av_packet_unref(pPacket);
+        if(pPacket)
+            av_packet_unref(pPacket);
         
     }
     pthread_mutex_lock(&mtxplot);

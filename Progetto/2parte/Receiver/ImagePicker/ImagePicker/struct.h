@@ -39,7 +39,7 @@ typedef struct el_gop {
     int end_last_gop; // quando finisce il gop precedente, utili per avere più informazioni quando se ne inizia un altro
     int accepted28; // mi indica da che numero di sequenza accettare i nal type 28
     int after_5; // indica se ho ricevuto un pacchetto con nal type diverso da 5
-    int start28; // inizio del nal type di tipo 28, utile per sapere quando il nal_type 5 finisce
+    int startP; // inizio del nal type di tipo 28, utile per sapere quando il nal_type 5 finisce
     int metadata_start; // indica da dove inizia il pacchetto sps e pps
     int next_metadata; // mi indica il punto di inizio del prossimo gop
     uint16_t losted_packet[DIMARRSTAT]; //array dove ogni entry indica che pacchetti sono stati persi
@@ -55,7 +55,7 @@ typedef struct el_rtp {
     long r_timestamp; //timestamp lato receiver
     int n_pkt;
     int from_thr;
-    unsigned int nal_type; //viene calcolato in addPacketToGOP
+    unsigned int slice_type; //viene calcolato in addPacketToGOP
     unsigned int state; //128 se è lo start, 64 se è la fine, 0 altrimenti
     unsigned int decoder; //se state == 128 allora contiene le informazioni per decodificare il frame
     int sent; /* permette di sapere se il pacchetto è stato spedito */

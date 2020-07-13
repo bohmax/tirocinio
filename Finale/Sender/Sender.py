@@ -1,81 +1,137 @@
-from scapy.all import *
-from scapy.layers.inet import IP, UDP
-from scapy.layers.l2 import Ether, Loopback
+import math
+import random
+import struct
+import queue
+import time
+from threading import Thread
+from queue import Empty
+from scipy.stats import gamma
 
 
 class Sender:
 
+    #contiene gli indici dei pacchetti non inviati
+    _pkt_losted = []
+
     """
-    @param operatore: canale su cui spedire il pacchetto
-    @param ip: ip di destinazione su cui spedire i pacchetti
-    @param port: porta su cui vengono spediti i pacchetti
+    @param simulate: True se si simula l'invio su una rete reale, False altimenti
+    @param alpha_e: valore alpha per decidere se si deve entrare nell'evento
+    @param scale_e: valore scale per decidere se si deve entrare nell'evento
+    @param alpha_p: valore alpha per decidere quanti pacchetti perdere
+    @param scale_p: valore scale per decidere quanti pacchetti perdere
+    @param alpha_d: valore alpha per decidere di quanto far ritardare un pacchetto
+    @param scale_d: valore scal per decidere di quanto far ritardare un pacchetto
     """
+    def __init__(self, simulate, alpha_e, scale_e, alpha_p, scale_p, alpha_d, scale_d):
+        self._simulate = simulate
+        if simulate:
+            self._alpha_e = alpha_e
+            self._scale_e = scale_e
+            self._alpha_p = alpha_p
+            self._scale_p = scale_p
+            self._alpha_d = alpha_d
+            self._scale_d = scale_d
+            self._delay = gamma.rvs(alpha_d, scale=scale_d, size=1)
+            self._evento = gamma.rvs(alpha_e, scale=scale_e, size=1)
+            self._perdita = gamma.rvs(alpha_p, scale=scale_p, size=1)
+            self._delay_prec = 0
+            self._counter = 0  # numero di paccheti da scartare
+            self._indice = 0  # numero di pacchetti inviati
+            self._delay_list = []  # lista in cui verrano inseriti i pacchetti da non spedire subito
+            self._queue = queue.Queue()  # coda per inoltrare pacchetti al listThread
+            self._listThread = Thread(target=self.send_delayed, args=(self._delay_list, self._queue))
+            self._listThread.start()
 
-    def __init__(self, operatore, interface, ip, port):
-        if LOOPBACK_NAME != interface:  # non è un interfaccia di loopback
-            self._loopback = False
-        else:
-            self._loopback = True
-        if not self._loopback or not sys.platform == 'linux':
-            self._socket = conf.L2socket(iface=interface)
-        else:
-            conf.L3socket = L3RawSocket(iface=interface)  # https://scapy.readthedocs.io/en/latest/troubleshooting.html
-            self._socket = conf.L3socket
-        self._operatore = operatore
-        self._mac_address = get_if_hwaddr(interface)
-        self._src_ip = get_if_addr(interface)
-        self._ip = ip
-        self._port = port
+    def send(self, socket, address, pkt, indice):
+        if self._simulate:
+            ret = self.send_simulate(socket, address, pkt, indice)
+            if ret == 0:
+                self._delay = gamma.rvs(self._alpha_d, scale=self._scale_d, size=1000)
+                self._evento = gamma.rvs(self._alpha_e, scale=self._scale_e, size=1000)
+                self._perdita = gamma.rvs(self._alpha_p, scale=self._scale_p, size=1000)
+        else:  # ci sarà un ritardo e una perdita reale
+            pkt = pkt + (bytearray(struct.pack("d", time.time())))
+            self.send_pkt(socket, address, pkt)
 
-    def set_packet(self, pkt):
-        if not self._loopback:
-            pkt[Ether].len += 8
-            pkt[Ether].src = self._mac_address
-            del pkt[Ether].dst
-        elif not sys.platform == 'linux':
-            pkt = Loopback()/pkt.getlayer(IP)
-        else:
-            pkt = pkt.getlayer(IP)
-        pkt[IP].len += 8
-        pkt[IP].src = self._src_ip
-        pkt[IP].dst = self._ip
-        pkt[UDP].len += 8
-        del pkt[IP].chksum
-        del pkt[UDP].chksum
-        return pkt
+    def send_simulate(self, socket, address, pkt, indice):
+        index = self._indice % 1000
+        if self._counter <= 0:  # mi sto chiedendo se non ho pacchetti da scartare
+            rng = random.random()
+            if rng > self._evento[index]:
+                val = self._delay[index]  # calcola il delay
+                delay = val - self._delay_prec
+                if delay < 0:
+                    delay = 0
+                self._delay_prec = delay
+                pkt = pkt + (bytearray(struct.pack("d", time.time())))
+                self._queue.put((True, socket, address, pkt, (time.time() + delay)))  # il primo parametro indica al Thread di continuare a ciclare
+            else:  # entra nell'evento perdita
+                self._counter = math.ceil(self._perdita[index]) - 1
+                self._pkt_losted.append(indice)
+            self._indice += 1
+        else:  # se ho pacchetti da scartare a causa di un evento perdita
+            self._counter -= 1
+            self._pkt_losted.append(indice)
+        return index
 
-    def send_setted(self, pkt, indice):
-        pkt[UDP].dport = self._port
-        self._operatore.send(self._socket, pkt, indice)
+    def send_delayed(self, delay_list, queue):
+        temp_min = float('inf')  # rappresenta il timestamp del pacchetto con meno delay, inizializzato con un grande va
+        cicla = True
+        while cicla:
+            if not delay_list:  # La lista è vuota, si attende un pacchetto.
+                cicla, temp_min = self.insertList(delay_list, queue, True, temp_min)
+                if not cicla:
+                    continue
+            while time.time() <= temp_min:  # si attende finché non c'è almeno un pacchetto da spedire
+                cicla, temp_min = self.insertList(delay_list, queue, False, temp_min)
+                if not cicla:
+                    return
+            temp_min = float('inf')
+            for i in reversed(self._delay_list):  # c'è almeno un pacchetto da spedire
+                socket, addr, pkt, times = i
+                if time.time() > times:
+                    self.send_pkt(socket, addr, pkt)
+                    self._delay_list.remove(i)
+                else:  # può essere aggiornato il tempo minimio
+                    if temp_min > times:
+                        temp_min = times
 
-    def send_unsetted(self, pkt, indice):
-        pkt = self.set_packet(pkt)
-        pkt[UDP].dport = self._port
-        self._operatore.send(self._socket, pkt, indice)
+    def insertList(self, list, queue, blocking, min_time):
+        cicla = True
+        try:
+            cicla, *i = queue.get(block=blocking)
+            if cicla:
+                socket, addr, pkt, time = i
+                if min_time > time:
+                    min_time = time
+                list.append((socket, addr, pkt, time))
+        except Empty:
+            pass
+        return cicla, min_time
 
-    def setIP(self, dstip):
-        self._ip = dstip
+    def send_pkt(self, socket, addr, pkt):
+        try:
+            socket.sendto(pkt, addr)
+        except KeyboardInterrupt:
+            pass
 
-    def setPort(self, port):
-        self._port = port
+    def setDelay(self, delay):
+        self._delay = delay
 
-    def get_srcIP(self):
-        return self._src_ip
+    def getThr(self):
+        return self._listThread
 
-    def getIP(self):
-        return self._ip
+    def getQueue(self):
+        return self._queue
 
-    def getPort(self):
-        return self._port
+    def getDelay(self):
+        return self._delay
 
-    def getOperatore(self):
-        return self._operatore
-
-    def getMacAddress(self):
-        return self._mac_address
+    def getNotSent(self):
+        return self._pkt_losted
 
     def __repr__(self):
-        return "<Sender con ip: %s, porta %s>" % (self._ip, self._port)
+        return "<Operatore con nome: %s, ha un delay di %s>" % (self._delay)
 
     def __str__(self):
-        return "Sender con ip: %s, porta %s" % (self._ip, self._port)
+        return "Nome: %s, ha un delay di %s" % (self._delay)

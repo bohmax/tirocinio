@@ -7,27 +7,28 @@ import Statistiche
 from scapy.all import *
 from Timing import *
 from multiprocessing import Process, Queue
+import queue
 import time
 import signal
 signal.signal(signal.SIGINT, signal.default_int_handler)
 
 """
 argv[1] deve contenere il path del file pcap che dovra essere letto
-argv[2] l'interfaccia su cui mandare i pacchetti
-argv[3] Serve per specificare l'ip in cui spedire i pacchetti
+argv[2] Serve per specificare l'ip in cui spedire i pacchetti
 attualmente specifica l'ip
-argv[4] numero di canali
-argv[5] la prima porta di un canale, se ci sono più porta i canali saranno numerati come (argv[5], argv[5]+1, etc..)
-argv[6] Specifica la porta in cui saranno ricevute le statistiche
-argv[7] Specifica il path in cui saranno salvati i GOP
-argv[8] Specifica il path in cui saranno salvati i frame
-argv[9] Specifica se usare i valori gamma, 1 per usarli, 0 altrimenti
-argv[10] Specifica il parametro gamma per decidere se si entra nell'evento perdita pacchetti
-argv[11] Specifica il parametro beta per decidere se si entra nell'evento perdita pacchetti
-argv[12] Specifica il parametro gamma per decidere quanti pacchetti scartare nell'evento perdita pacchetti
-argv[13] Specifica il parametro beta per decidere quanti pacchetti scartare nell'evento perdita pacchetto
-argv[14] Specifica il parametro gamma per decidere la durata del delay
-argv[15] Specifica il parametro beta per decidere la durata del delay
+argv[3] numero di canali
+argv[4] la prima porta di un canale, se ci sono più porta i canali saranno numerati come (argv[5], argv[5]+1, etc..)
+argv[5] Specifica la porta in cui saranno ricevute le statistiche
+argv[6] Specifica il path in cui saranno salvati i GOP
+argv[7] Specifica il path in cui saranno salvati i frame
+argv[8] Specifica se usare i valori gamma, 1 per usarli, 0 altrimenti
+... si prosegue come segue per ogni canale
+argv[9] Specifica il parametro gamma per decidere se si entra nell'evento perdita pacchetti
+argv[10] Specifica il parametro beta per decidere se si entra nell'evento perdita pacchetti
+argv[11] Specifica il parametro gamma per decidere quanti pacchetti scartare nell'evento perdita pacchetti
+argv[12] Specifica il parametro beta per decidere quanti pacchetti scartare nell'evento perdita pacchetto
+argv[13] Specifica il parametro gamma per decidere la durata del delay
+argv[14] Specifica il parametro beta per decidere la durata del delay
 """
 
 conf.use_pcap = True  # permette di usare subito un nuovo socket appena lo creo
@@ -58,6 +59,57 @@ def inizializza():
         scale_delay.append(float(sys.argv[14 + num_var]))
 
 
+def invio_canali(num_canali, queue_canali, p_num_canali, p_canale, pkt, index):
+    val = random.random()
+    if num_canali == 3:
+        if val > p_num_canali[0]:  # usa un canale
+            if val <= p_canale[0]:
+                queue_canali[0].put((pkt, index))
+            elif val <= (p_canale[1]+p_canale[2]):
+                queue_canali[1].put((pkt, index))
+            else:
+                queue_canali[2].put((pkt, index))
+        elif val > (p_num_canali[1] - p_num_canali[0]):
+            if val <= p_canale[3]:
+                queue_canali[0].put((pkt, index))
+                queue_canali[1].put((pkt, index))
+            elif val <= (p_canale[4] + p_canale[5]):
+                queue_canali[0].put((pkt, index))
+                queue_canali[2].put((pkt, index))
+            else:
+                queue_canali[2].put((pkt, index))
+                queue_canali[3].put((pkt, index))
+        else:
+            for i in queue_canali:
+                i.put((pkt, index))
+    else:
+        for i in queue_canali:
+            i.put((pkt, index))
+
+
+# si ottiene una lista che contiene tutti i pacchetti che non sono stati spediti da nessun Thread
+def not_sended_paket(process_list, queue_list):
+    arr = []
+    for i in process_list:
+        i.join()
+
+    for i in queue_list:
+        arr.append(i.get())
+    new = []
+    for i in arr[0]:  # el per elemento del primo array
+        conta = 0
+        for x in range(1, 3):  # scorri le altre liste
+            for val in arr[x]:
+                if i >= val:
+                    if i == val:
+                        conta += 1
+                else:
+                    break
+        if conta == 2:
+            new.append(i)
+    print(new)
+
+
 def canale(queue, nome, ip, porta, simulato, alpha_e, scale_e, alpha_p, scale_p, alpha_d, scale_d):
     sender = Sender(simulate=simulato, alpha_e=alpha_e, scale_e=scale_e, alpha_p=alpha_p,
                     scale_p=scale_p, alpha_d=alpha_d, scale_d=scale_d)
@@ -70,8 +122,9 @@ def canale(queue, nome, ip, porta, simulato, alpha_e, scale_e, alpha_p, scale_p,
             operatore.send(pkt, index)
         except KeyboardInterrupt:
             break
-    sender.getQueue().put((False, None))
-    sender.getThr().join()
+    if simulato:
+        sender.getQueue().put((False, None))
+        sender.getThr().join()
     queue.put(operatore.getSender().getNotSent())
 
 
@@ -103,7 +156,7 @@ if __name__ == "__main__":
     #image_process.start()  # da usare
     stat_process.start()
     try:
-        queue_stat.get()
+        num_canali, quali = queue_stat.get()
     except KeyboardInterrupt:
         exit(-1)
     packets = rdpcap(sys.argv[1], 1)
@@ -118,42 +171,23 @@ if __name__ == "__main__":
             for index, pkt in enumerate(pcap_reader):
                 if IP in pkt and RTP in pkt:
                     #numero_totale_pkt = index
+                    try:
+                        num_canali, quali = queue_stat.get(block=False)
+                    except queue.Empty:
+                        pass
                     if start_time == 0:  # per avere uno start time più fedele possibile
                         start_time = time.time()
                     send = operatore.set_pkt(pkt)
                     timer.nsleep(timer.delay_calculator(pkt.time, pkt_start_time, start_time)*0.85)  # in modo da svegliarsi un 15% prima e poter eseguire più invii senza problemi
-                    for i in queue_list:
-                        i.put((send, index))
+                    invio_canali(num_porte, queue_list, num_canali, quali, send, index)
     except KeyboardInterrupt:
         pass
 
-    #arr = sender[0].getOperatore().getNotSent()
-    arr = []
     esci = True
     for i in queue_list:
         i.put((None, -1))
         time.sleep(1)
     #queue_gop.put(None) # da usare
-    ''' per vedere se ci sono pacchetti mai spediti
-    for i in process_list:
-        i.join()
-
-    for i in queue_list:
-        arr.append(i.get())
-    new = []
-    for i in arr[0]:  # el per elemento del primo array
-        conta = 0
-        for x in range(1, 3):  # scorri le altre liste
-            for val in arr[x]:
-                if i >= val:
-                    if i == val:
-                        conta += 1
-                else:
-                    break
-        if conta == 2:
-            new.append(i)
-    print(new)
-    '''
     #image_process.join() # da usare
     #print(arr)
     #print('Numero di elementi non inviati ' + str(len(arr)) + ' su ' + str(numero_totale_pkt) + ' pacchetti')

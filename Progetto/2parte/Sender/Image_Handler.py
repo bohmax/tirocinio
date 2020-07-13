@@ -1,4 +1,4 @@
-from _queue import Empty
+from queue import Empty
 from multiprocessing import Process
 from scapy.all import *
 from scapy.layers.inet import UDP, IP

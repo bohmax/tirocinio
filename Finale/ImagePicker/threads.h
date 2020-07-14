@@ -15,7 +15,7 @@
 void termination_loopback(int signum);
 
 //thread per la gestione dei segnali per far terminare il programma
-void* segnali(void *arg);
+void* Segnali(void *arg);
 
 //thread delle statistiche
 void* statThread(void* arg);

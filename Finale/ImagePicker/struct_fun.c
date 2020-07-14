@@ -45,10 +45,11 @@ gop_info* setNextElGOP(int gop_num, int start, int last_frame_gop, int start_new
     new->accepted28 = start_new_gop;
     new->metadata_start = new_metadata;
     new->next_metadata = INT_MAX;
+    new->incremented = 1;
     return new;
 }
 
-rtp* setElRTP(u_char* buf, int size, long timestamp, int npkt, int from_thr){
+rtp* setElRTP(u_char* buf, int size, double timestamp, int npkt, int from_thr){
     rtp* new = malloc(sizeof(rtp));
     memset(new, '\0', sizeof(rtp));
     new->packet = buf;
@@ -56,7 +57,7 @@ rtp* setElRTP(u_char* buf, int size, long timestamp, int npkt, int from_thr){
     new->r_timestamp = timestamp;
     new->n_pkt = npkt;
     new->from_thr = from_thr;
-    new->nal_type = 0;
+    new->slice_type = 0;
     new->state = 0;
     new->decoder = 0;
     new->sent = 0;

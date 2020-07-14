@@ -63,22 +63,22 @@ def invio_canali(num_canali, queue_canali, p_num_canali, p_canale, pkt, index):
     val = random.random()
     if num_canali == 3:
         if val > p_num_canali[0]:  # usa un canale
-            if val <= p_canale[0]:
+            if val <= p_canale[0]:  # canale 1
                 queue_canali[0].put((pkt, index))
-            elif val <= (p_canale[1]+p_canale[2]):
+            elif val <= (p_canale[1]+p_canale[2]):  # canale 2
                 queue_canali[1].put((pkt, index))
-            else:
+            else:  # canale 3
                 queue_canali[2].put((pkt, index))
         elif val > (p_num_canali[1] - p_num_canali[0]):
-            if val <= p_canale[3]:
+            if val <= p_canale[3]:  # canale 12
                 queue_canali[0].put((pkt, index))
                 queue_canali[1].put((pkt, index))
-            elif val <= (p_canale[4] + p_canale[5]):
+            elif val <= (p_canale[4] + p_canale[5]):  # canale 13
                 queue_canali[0].put((pkt, index))
                 queue_canali[2].put((pkt, index))
-            else:
+            else:  # canale 23
+                queue_canali[1].put((pkt, index))
                 queue_canali[2].put((pkt, index))
-                queue_canali[3].put((pkt, index))
         else:
             for i in queue_canali:
                 i.put((pkt, index))

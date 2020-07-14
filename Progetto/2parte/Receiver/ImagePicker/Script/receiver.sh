@@ -51,16 +51,15 @@ do
 	[[ $last_char != "/" ]] && input[i]="${input[i]}/";
 done
 
-if [ ! -f ImagePicker/client ]; then
-    cd ImagePicker
-    make
-    if [ ! $? -eq 0 ]; then
-    	cd ..
-    	echo "Makefail failed try to run it from it s folder and check if ffmpeg is linked with the path in makefile"
-    	exit -1
-    fi
-    cd .. 
+
+cd ImagePicker
+make
+if [ ! $? -eq 0 ]; then
+	cd ..
+	echo "Makefail failed try to run it from it s folder and check if ffmpeg is linked with the path in makefile"
+	exit -1
 fi
+cd ..
 
 sleep 2
 ImagePicker/start.sh "${input[0]}" "${input[1]}" "${input[2]}" "${input[3]}" "${input[4]}" "${input[5]}" "${input[6]}" "${input[7]}" "${input[8]}" "${input[9]}" "${input[10]}"&

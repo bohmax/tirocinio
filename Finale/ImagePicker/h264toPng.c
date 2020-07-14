@@ -21,7 +21,7 @@ void logging(const char *fmt, ...){
 }
 
 void plot_value(char path_r[], int gop_num, int FrameNo, int op, gop_info* info){
-    int sum = 0, i = 0;
+    int sum = 0, i = 0, j = 0;
     char PNGNameSender[128];
     sprintf(PNGNameSender, "%sframe-%06d-%06d.png", path_image_sender, gop_num, FrameNo);
     if(op)
@@ -29,10 +29,10 @@ void plot_value(char path_r[], int gop_num, int FrameNo, int op, gop_info* info)
     pthread_mutex_lock(&mtxplot);
     fprintf(pipe_plot, "%s %s %d %d", path_r, PNGNameSender, gop_num, FrameNo);
     //vado all'indice da utilizzare di losted
-    for(i=0; i<FrameNo ;i++)
+    for(i=0; i<FrameNo-1; i++)
         sum+=info->len_losted[i];
-    for(i=0; i<info->len_losted[FrameNo] ;i++)
-        fprintf(pipe_plot, " %d", info->losted_packet[sum+i]);
+    for(j=0; j<info->len_losted[FrameNo-1]; j++)
+        fprintf(pipe_plot, " %d", info->losted_packet[sum+j]);
     fprintf(pipe_plot, "\n");
     fflush(pipe_plot);
     pthread_mutex_unlock(&mtxplot);
@@ -294,7 +294,8 @@ int create_image(gop_info* info){
         if (pPacket->stream_index == video_stream_index)
             decode_packet(pPacket, pCodecContext, info->gop_num, info);
         // https://ffmpeg.org/doxygen/trunk/group__lavc__packet.html#ga63d5a489b419bd5d45cfd09091cbcbc2
-        av_packet_unref(pPacket);
+        if(pPacket)
+            av_packet_unref(pPacket);
         
     }
     pthread_mutex_lock(&mtxplot);

@@ -23,7 +23,7 @@ int set_stat_sock(){
     bzero(&servaddr, sizeof(servaddr));
     // assign IP, PORT
     servaddr.sin_family = AF_INET;
-    servaddr.sin_addr.s_addr = inet_addr(ip_sender);
+    servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
     servaddr.sin_port = htons(stat_port);
     // connect the client socket to server socket
     while (tentativi < 5 && !esci) {
@@ -85,9 +85,9 @@ uint16_t stat_out_of_order(pkt_info ord[], uint16_t not_ord[], int dim){
     return out;
 }
 
-float jitter_calculator(pkt_info el[], int dim){
+double jitter_calculator(pkt_info el[], int dim){
     pkt_info infj, infi; // variabili di lavoro per rendere più leggibile il calcolo del jitter
-    float d_value = 0, jitter = 0;
+    double d_value = 0, jitter = 0;
     for(int j = 1; j < dim; j++){
         infj = el[j];
         infi = el[j-1];
@@ -113,6 +113,9 @@ rtp* delete_and_get_next(rtp* el, uint16_t* from, int end_seq){
 }
 
 void fill_losted_packet(uint16_t* prec, uint16_t* from, rtp* el, gop_info* info){
+    if (!el)
+        return;
+        
     while ((*prec)+1 != *from) {
         info->losted_packet[info->index_losted] = *prec;
         info->index_losted++;

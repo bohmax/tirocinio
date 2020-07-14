@@ -24,7 +24,7 @@ typedef struct gop_data {
 typedef struct packet_info {
     uint16_t ids; // id di un pacchetto
     double pkt_timestamp; // timestamp lato sender
-    long r_timestamp; // timestamp lato receiver
+    double r_timestamp; // timestamp lato receiver
 } pkt_info;
 
 /* struttura per passare informazioni su un gop */
@@ -52,7 +52,7 @@ typedef struct el_gop {
 typedef struct el_rtp {
     u_char* packet;
     int size;
-    long r_timestamp; //timestamp lato receiver
+    double r_timestamp; //timestamp lato receiver
     int n_pkt;
     int from_thr;
     unsigned int slice_type; //viene calcolato in addPacketToGOP
@@ -64,8 +64,8 @@ typedef struct el_rtp {
 typedef struct{
     uint16_t perdita; //tasso di perdita
     uint16_t lunghezza; //lunghezza media perdita
-    float delay; //delay medio della finestra
-    float jitter;
+    double delay; //delay medio della finestra
+    double jitter;
     uint16_t ordine; //numero di pacchetti fuori ordine
     int number_of_pkt; //numero di pacchetti ricevuti
 }send_stat;

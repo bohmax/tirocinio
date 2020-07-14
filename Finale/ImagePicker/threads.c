@@ -31,7 +31,7 @@ void send_close(list** testa, list** coda, pthread_mutex_t* mtx, pthread_cond_t*
     pthread_mutex_unlock(mtx);
 }
 
-void* segnali(void *arg){
+void* Segnali(void *arg){
     int ris;
     printf("Avviato\n");
     if(sigwait(&sigset_usr, &ris)!=0){
@@ -43,11 +43,12 @@ void* segnali(void *arg){
     esci = 1;
     
     pthread_kill(stat_thr, SIGALRM); //sveglia thread statistiche per un uscita rapida
-    /* inviare qui un pacchetto falzo per essere sicuri di uscire */
+    /* inviarepacchetti fittizzi per essere sicuri di uscire */
     /* invia chiusura gop thread */
     for (int i = 0; i < num_list; i++) {
         pthread_kill(listener[i], SIGALRM); //invia segnali a listener per sbloccarlo da pcap loop
         send_close(&testa_gop, &coda_gop, &mtx_gop, &cond_gop, NULL, setElRTP(NULL, -1, -1, -1, -1));
+        usleep(2000000); // per dare al tempo ad ogni Thread di svegliare il thread
     }
     send_close(&testa_ord, &coda_ord, &mtx_ord, &cond_ord, &freeGOP, setElGOP(-1, -1));
     //svuota la lista di decodifica
@@ -63,7 +64,8 @@ void* segnali(void *arg){
 }
 
 void* statThread(void* arg){
-    int i = 0, j = 0, size, lenght, delay = 0;
+    int i = 0, j = 0, size, lenght;
+    double delay = 0;
     struct timespec ts = { 0, stat_interv*1000};
     stat_t temp; // usato per fare lo swap con statistiche e statistiche temp
     stat_t* statistiche_ref = malloc(sizeof(stat_t)*num_list); //contiene il riferimento alle vecchie statistiche
@@ -96,10 +98,10 @@ void* statThread(void* arg){
                 temp = statistiche_ref[i];
                 for(j = 0; j < temp.index; j++){
                     ids_copy[j] = temp.pkt_information[j].ids; //copia array
-                    delay += temp.pkt_information[j].r_timestamp - temp.pkt_information[j].pkt_timestamp;
+                    delay += (double) temp.pkt_information[j].r_timestamp - temp.pkt_information[j].pkt_timestamp;
                 }
                 //calcolo delay
-                spedisci[i].delay = (float) delay/statistiche_ref[i].index;
+                spedisci[i].delay = (double) delay/statistiche_ref[i].index;
                 qsort(statistiche_ref[i].pkt_information, statistiche_ref[i].index, sizeof(pkt_info), cmpfunc); // ordinalo
                 //calcolo jitter
                 spedisci[i].jitter = jitter_calculator(temp.pkt_information, temp.index);
@@ -109,7 +111,7 @@ void* statThread(void* arg){
                 spedisci[i].lunghezza = stat_lunghezza(temp.pkt_information, statistiche_ref[i].index);
                 //calcolo numero di perdite
                 size = statistiche_ref[i].index - 1; // numero di elementi nell'array - 1(l'estemo)
-                lenght = temp.pkt_information[size].ids - temp.pkt_information[size].ids; // max - min
+                lenght = temp.pkt_information[size].ids - temp.pkt_information[0].ids; // max - min
                 spedisci[i].perdita = size > lenght ? size - lenght : lenght - size;
                 spedisci[i].number_of_pkt = statistiche_ref[i].index;
             }
@@ -119,7 +121,7 @@ void* statThread(void* arg){
                 spedisci[i].jitter = -1;
                 spedisci[i].lunghezza = -1;
                 spedisci[i].ordine = -1;
-                spedisci[i].number_of_pkt = 0;
+                spedisci[i].number_of_pkt = -1;
             }
             statistiche_ref[i].index = 0;
             statistiche_ref[i].min = -1;
@@ -192,7 +194,7 @@ void* ReaderPacket(void* arg){
             else{ // pacchetti da scartare, inviati senza pps e sps
                 *from = el->metadata_start;
                 rtp* pkt = find_hash(from);
-                while (pkt && pkt->nal_type != 5 )
+                while (pkt && pkt->slice_type != 5 )
                     pkt = delete_and_get_next(pkt, from, el->next_metadata-1);
                 freeGOP((void**)&el);
             }
@@ -292,8 +294,9 @@ void sniff(u_char *user, const struct pcap_pkthdr* pkthdr, const u_char* packet)
     //setto gli elementi per poter passare i dati a un altro thread
     u_char* buf = malloc(sizeof(u_char)*pkthdr->len);
     memcpy(buf, packet, pkthdr->len);
+    double time = ((double) pkthdr->ts.tv_sec) + ((double) pkthdr->ts.tv_usec/1000000);
     //rtphdr* rtpHeader = (rtphdr*) (packet + 4 + sizeof(struct ip) + sizeof(struct udphdr));
-    rtp* el= setElRTP(buf, pkthdr->len, pkthdr->ts.tv_sec, num_pkt, *(int*) user);
+    rtp* el= setElRTP(buf, pkthdr->len, time, num_pkt, *(int*) user);
     pthread_mutex_lock(&mtx_gop);
     pushList(&testa_gop, &coda_gop, el);
     pthread_cond_signal(&cond_gop);

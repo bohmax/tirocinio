@@ -24,7 +24,7 @@ uint16_t stat_lunghezza(pkt_info arr[], int index);
 uint16_t stat_out_of_order(pkt_info ord[], uint16_t not_ord[], int dim);
 
 //http://toncar.cz/Tutorials/VoIP/VoIP_Basics_Jitter.html calcolo jitter
-float jitter_calculator(pkt_info el[], int dim);
+double jitter_calculator(pkt_info el[], int dim);
 
 // Function designed for chat between client and server.
 void send_to_server(int sockfd, send_stat spedisci[]);

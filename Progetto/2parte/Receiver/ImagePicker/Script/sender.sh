@@ -26,20 +26,22 @@ input[4]=$(echo "$removed_comment" | awk '/^incoming_feedback_port/{print $3}') 
 input[5]=$(echo "$removed_comment" | awk '/^GOP_folder/{print $3}') #cartella dei gop lato sender per i GOP
 input[6]=$(echo "$removed_comment" | awk '/^VF_folder/{print $3}') #cartella immagini sender per le immagini
 input[7]=$(echo "$removed_comment" | awk '/^simulator/{print $3}') #cartella immagini sender
-canali=$(echo "$removed_comment" | awk '/^channels_stats/{$1=$2=""; print $0" \\n"}') #stampa tutta la riga per le statistiche
+var=$(echo "$removed_comment" | awk '/^channels_stats/{$1=$2=""; print $0}') #stampa tutta la riga per le statistiche
 var=$(echo $var | tr -d "[]") # rimuove le parentesi quadre di channels stats
 var=$(echo "$var" | sed 's.; .;.g') # Si elimina lo spazio successivo a ;
 IFS=';' read -a arr <<< "$var" # crea un array per ogni ;
 i=0
 j=0
-if [[ simulator -eq 1 ]]; then
+insert=8
+if [[ ${input[7]} -eq 1 ]]; then
 	for el in "${arr[@]}"
 	do
 		i=0
 		for val in $el
 		do
 			if [[ "$val" =~ ^[+-]?[0-9]+\.?[0-9]*$ ]]; then #controlla se è un numero
-				input[i]=$val
+				input[$insert]=$val
+				((insert++))
 				((i++))
 			fi
 		done
@@ -54,9 +56,10 @@ if [[ simulator -eq 1 ]]; then
 			exit 1
 		fi
 else
-	for i in $(seq 1 $num)
+	fino=$(($insert+6*${input[2]}))
+	for i in $(seq $insert $fino)
 	do
-		input[$i-1]=0
+		input[$i]=0
 	done
 fi
 
@@ -76,8 +79,8 @@ do
 			exit 0
 		fi
 	fi
-	length=${#input[i]}
-	last_char=${input[i]:length-1:1}
+	length=${#input[$i]}
+	last_char=${input[$i]:length-1:1}
 	[[ $last_char != "/" ]] && input[i]="${input[i]}/";  #aggiunge uno slash finale nei path
 done
 

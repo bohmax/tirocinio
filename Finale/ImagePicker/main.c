@@ -56,7 +56,8 @@ void set_pipe(){
 void get_loopback(pcap_if_t* alldevs,char name[] ,char errbuf[]){
     pcap_if_t *d=alldevs;
     while(d!=NULL) {
-        if(d->flags == PCAP_IF_LOOPBACK || d->flags == 55){
+        //printf("%s %d\n", d->name, d->flags); per controllare il tipo di interfaccia
+        if(d->flags == PCAP_IF_LOOPBACK || d->flags == 55 || d->flags == 7){
             if (!strcmp(d->name, name)){
                 from_loopback = 1;
                 loopback = handle[0];
@@ -73,18 +74,25 @@ void get_loopback(pcap_if_t* alldevs,char name[] ,char errbuf[]){
         }
         d=d->next;
     }
-    printf("Cannot find loopback interface, other thank loopback intrface you need a loopback with DLT_NULL link type header\n");
+    printf("Cannot find loopback interface, other than loopback interface you need a loopback with DLT_NULL link type header, otherwise if you know what you are doing change the control on the flag above in code\n");
     exit(1);
 }
 
 void set_handler(char device_name[], int index, struct bpf_program* fp, char filter[], char errbuf[]){
     bpf_u_int32 pMask;            /* subnet mask */
     bpf_u_int32 pNet;             /* ip address*/
-    handle[index] = pcap_open_live(device_name, MAXBUF, 0, 100, errbuf); //ottengo uno sniffer
-    if(handle == NULL){
+    handle[index] = pcap_create(device_name, errbuf);//(device_name, MAXBUF, 0, 100, errbuf); //ottengo uno sniffer
+    if(handle[index] == NULL){
         handle[index] = pcap_open_offline(device_name, errbuf);
         if(handle == NULL){
             printf("pcap_open() failed due to [%s]\n", errbuf);
+            exit(1);
+        }
+    }
+    else{
+        pcap_set_immediate_mode(handle[index], 1);
+        if(pcap_activate(handle[index])!=0){
+            printf("cannot activate sniffer [%s]\n", errbuf);
             exit(1);
         }
     }
@@ -185,7 +193,7 @@ int main(int argc, const char * argv[]) {
     info = setElGOP(-1, -1); //primo gop, parte da 0
     hash_packet = icl_hash_create(HSIZE, uint16_hash_function, uint_16t_key_compare);
     //avvio thread che gestisce i segnali
-    SYSFREE(notused,pthread_create(&segnal,NULL,&segnali,NULL),0,"thread")
+    SYSFREE(notused,pthread_create(&segnal,NULL,&Segnali,NULL),0,"thread")
     SYSFREE(notused,pthread_create(&order,NULL,&ReaderPacket,NULL),0,"thread") // ctrl-c to stop sniffing
     //device = find_device(alldevs, dev_name); //se è null provo a leggere offline
     printf("Sniffing on device: %s\n", dev_name);

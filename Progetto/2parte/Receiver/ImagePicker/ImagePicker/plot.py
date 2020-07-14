@@ -1,39 +1,74 @@
 import csv
 import fileinput
-import time
+import signal
 from datetime import datetime
-import matplotlib
 import cv2
-import matplotlib.pyplot as plt
 from threading import Thread
-from matplotlib.animation import FuncAnimation
+from pyqtgraph.Qt import QtWidgets, QtCore
+import pyqtgraph as pg
+signal.signal(signal.SIGINT, signal.SIG_IGN)
 
-display_n_frame = 7
+
+class MyWidget(pg.GraphicsWindow):
+
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)
+        self.mainLayout = QtWidgets.QVBoxLayout()
+        self.setLayout(self.mainLayout)
+
+        self.timer = QtCore.QTimer(self)
+        self.timer.setInterval(100)  # in milliseconds
+        self.timer.timeout.connect(self.animate)
+        self.timer.start()
+
+        self.plotItem = self.addPlot(title="Qualità streaming")
+
+        self.plotDataItem = self.plotItem.plot([], pen=None,
+                                               symbolBrush=(255, 0, 0), symbolSize=5, symbolPen=None)
+        self.plotItem.setRange(yRange=(-0.5, 61))
+        self.ax = self.plotItem.getAxis('bottom')
+        self.ay = self.plotItem.getAxis('left')
+        self.ay.setLabel("PSNR [Db]")
+        self.ax.setLabel("Frame")
+        self.plotItem.setDownsampling(mode='peak')
+        self.plotItem.setClipToView(True)
+        #self.plotItem.setMouseEnabled(y=False)
+
+
+    def animate(self):
+        global max, x_vals, y_vals, move, xpos, last_max
+        self.plotDataItem.setData(x_vals[:dim], y_vals[:dim])
+        self.ax.setTicks([my_xticks[:dim]])
+        if last_max != max:
+            self.plotItem.setRange(xRange=[max-display_n_frame, max+0.5])
+        else:
+            last_max = max
+
+
+display_n_frame = 10
 data = datetime.now()
 path = 'statistics/plot/' + str(data) + '.csv'
-matplotlib.use('Qt5Agg')
-fig, ax = plt.subplots()
-plt.ylabel("Quality Db")
-plt.xlabel("Frame")
-plt.title("Grafico qualità streaming")
-plt.ion()
-ln, = ax.plot([], [], marker="o")
+### START QtApp #####
+app = QtWidgets.QApplication([])
+# Set graphical window, its title and size
+pg.setConfigOptions(antialias=False)  # True seems to work as well
+win = MyWidget()
+win.show()
+win.resize(800, 600)
+win.raise_()
 x_vals = []
 y_vals = []
 my_xticks = []
-plt.xticks(x_vals, my_xticks)
 dim, max, num_frame = 0, 1.0, 0  # dimensione array da plattare, max è il valore massimo da plottare e numero tatale dei frame attualmente inseriti
-distance = 0  # distanza dall'ultimo gop utilizzato
-ax.set_xlim(-0.5, display_n_frame + 0.5)
-ax.set_ylim(0, 61)
-move, esci = True, False
+distance, xpos, diff = 0, 0, 0  # distanza dall'ultimo gop utilizzato, posizione in cui è stato sollevato il tasto destro del mouse
+last_max = 0
+move, moved, esci = True, False, False
 last_image = ""  # ultima immagine utile, da confrontare in caso l'ultima immagina non sia decodificata
 current_gop, last_frame = 0, 0  # ultimo gop e frame utilizzato per l'ultima immagine
 not_in_current_gop = []  # vengono memorizzati qua i gop superiori per pater calcolare il psnr in seguito
 with open(path, 'w+') as f:
     writer = csv.writer(f)
     writer.writerow(["#GOP_number", "frame_number_within_GOP", "PSNR", "distance_from_original_img", "losted packet"])
-
 
 def sync_gop():
     global current_gop, not_in_current_gop, last_frame, last_image, last_frame
@@ -79,34 +114,12 @@ def psnr_calc(im1, im2, gop, frame, arr):
     x_vals.append(num_frame)
     y_vals.append(psnr)
     titolo = 'G' + str(gop) + '#F' + frame
-    my_xticks.append(titolo)
+    my_xticks.append((max, titolo))
     dim += 1
     max = dim
     with open(path, 'a') as f:
         writer = csv.writer(f)
         writer.writerow([gop, frame, psnr, distance, arr])
-
-
-def mypause(interval):
-    manager = plt._pylab_helpers.Gcf.get_active()
-    if manager is not None:
-        canvas = manager.canvas
-        if canvas.figure.stale:
-            canvas.draw_idle()
-        #plt.show(block=False)
-        canvas.start_event_loop(interval)
-    else:
-        time.sleep(interval)
-
-
-def onclickrelease(event):
-    global move
-    move = True
-
-
-def onclick(event):
-    global move
-    move = False
 
 
 def get_input():
@@ -133,51 +146,10 @@ def get_input():
                     last_frame = int(temp_frame)
                     psnr_calc(line[0], line[1], temp_gop, temp_frame, line[4:])
                 else:
-                    not_in_current_gop.append((line[0], line[1], temp_gop, int(temp_frame), line[3:]))  # line[3] sono tuuti gli indici da 4 fino alla fine
+                    not_in_current_gop.append((line[0], line[1], temp_gop, int(temp_frame), line[4:]))  # line[4] sono tutti gli indici da 4 fino alla fine
+    app.quit()
 
-
-def init():
-    ax.set_xlim(-0.5, display_n_frame + 0.5)
-    ax.set_ylim(0, 61)
-    ln.set_data([], [])
-    return ln,
-
-
-def animate(i):
-    global max, x_vals, y_vals
-    ln.set_data(x_vals[:dim], y_vals[:dim])
-    plt.xticks(x_vals[:dim], my_xticks[:dim])
-    if move:
-        ax.set_xlim(max - display_n_frame - 1.5, max + 0.5)
-    return ln,
-
-
-ani = FuncAnimation(fig, animate, init_func=init, interval=1000)
-cid1 = fig.canvas.mpl_connect('button_press_event', onclick)
-cid = fig.canvas.mpl_connect('button_release_event', onclickrelease)
 th = Thread(target=get_input)
 th.start()
-plt.show(block=False)
-while not esci:
-    try:
-        mypause(0.200)
-    except KeyboardInterrupt:
-        break
+app.exec_()
 th.join()
-fig.canvas.mpl_disconnect(cid)
-fig.canvas.mpl_disconnect(cid1)
-plt.close(fig=fig)
-
-
-'''
-    vecchio codice funzionante
-    while True:
-    for line in fileinput.input():
-        y = input('inserisci y\n')
-        x = input('inserisci x\n')
-        x_vals.append(float(x))
-        y_vals.append(float(y))
-        dim += 1
-        if float(x) > max:
-            max = float(x)
-'''

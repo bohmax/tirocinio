@@ -63,22 +63,22 @@ def invio_canali(num_canali, queue_canali, p_num_canali, p_canale, pkt, index):
     val = random.random()
     if num_canali == 3:
         if val > p_num_canali[0]:  # usa un canale
-            if val <= p_canale[0]:
+            if val <= p_canale[0]:  # canale 1
                 queue_canali[0].put((pkt, index))
-            elif val <= (p_canale[1]+p_canale[2]):
+            elif val <= (p_canale[1]+p_canale[2]):  # canale 2
                 queue_canali[1].put((pkt, index))
-            else:
+            else:  # canale 3
                 queue_canali[2].put((pkt, index))
         elif val > (p_num_canali[1] - p_num_canali[0]):
-            if val <= p_canale[3]:
+            if val <= p_canale[3]:  # canale 12
                 queue_canali[0].put((pkt, index))
                 queue_canali[1].put((pkt, index))
-            elif val <= (p_canale[4] + p_canale[5]):
+            elif val <= (p_canale[4] + p_canale[5]):  # canale 13
                 queue_canali[0].put((pkt, index))
                 queue_canali[2].put((pkt, index))
-            else:
+            else:  # canale 23
+                queue_canali[1].put((pkt, index))
                 queue_canali[2].put((pkt, index))
-                queue_canali[3].put((pkt, index))
         else:
             for i in queue_canali:
                 i.put((pkt, index))
@@ -152,8 +152,8 @@ if __name__ == "__main__":
     queue_gop = Queue()
     esci = False
     stat_process = Process(target=Statistiche.stat, args=((queue_stat, ip_receiver, port_stat, num_porte), ))
-    #image_process = Process(target=Image_Handler.analyzer, args=((queue_gop, pcap_path, gop_dir, img_dir), ))  # da usare
-    #image_process.start()  # da usare
+    image_process = Process(target=Image_Handler.analyzer, args=((queue_gop, pcap_path, gop_dir, img_dir), ))  # da usare
+    image_process.start()  # da usare
     stat_process.start()
     try:
         num_canali, quali = queue_stat.get()
@@ -187,8 +187,8 @@ if __name__ == "__main__":
     for i in queue_list:
         i.put((None, -1))
         time.sleep(1)
-    #queue_gop.put(None) # da usare
-    #image_process.join() # da usare
+    queue_gop.put(None) # da usare
+    image_process.join() # da usare
     #print(arr)
     #print('Numero di elementi non inviati ' + str(len(arr)) + ' su ' + str(numero_totale_pkt) + ' pacchetti')
     print("--- %s seconds ---" % (time.time() - start))

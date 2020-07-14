@@ -46,7 +46,7 @@ int num_list = 1, from_port = 5000, stat_port = DPORT, video_port = DPORT,stat_i
 char ip_sender[DIM_IP];
 
 void set_pipe(){
-    pipe_plot = popen("python3 ImagePicker1/plot.py", "w");
+    pipe_plot = popen("python3 ImagePicker/plot.py", "w");
     if (pipe_plot == NULL) {
         printf("popen error\n");
         exit(1);
@@ -56,7 +56,8 @@ void set_pipe(){
 void get_loopback(pcap_if_t* alldevs,char name[] ,char errbuf[]){
     pcap_if_t *d=alldevs;
     while(d!=NULL) {
-        if(d->flags == PCAP_IF_LOOPBACK || d->flags == 55){
+        //printf("%s %d\n", d->name, d->flags); per controllare il tipo di interfaccia
+        if(d->flags == PCAP_IF_LOOPBACK || d->flags == 55 || d->flags == 7){
             if (!strcmp(d->name, name)){
                 from_loopback = 1;
                 loopback = handle[0];
@@ -73,18 +74,25 @@ void get_loopback(pcap_if_t* alldevs,char name[] ,char errbuf[]){
         }
         d=d->next;
     }
-    printf("Cannot find loopback interface, other thank loopback intrface you need a loopback with DLT_NULL link type header\n");
+    printf("Cannot find loopback interface, other than loopback interface you need a loopback with DLT_NULL link type header, otherwise if you know what you are doing change the control on the flag above in code\n");
     exit(1);
 }
 
 void set_handler(char device_name[], int index, struct bpf_program* fp, char filter[], char errbuf[]){
     bpf_u_int32 pMask;            /* subnet mask */
     bpf_u_int32 pNet;             /* ip address*/
-    handle[index] = pcap_open_live(device_name, MAXBUF, 0, 100, errbuf); //ottengo uno sniffer
-    if(handle == NULL){
+    handle[index] = pcap_create(device_name, errbuf);//(device_name, MAXBUF, 0, 100, errbuf); //ottengo uno sniffer
+    if(handle[index] == NULL){
         handle[index] = pcap_open_offline(device_name, errbuf);
         if(handle == NULL){
             printf("pcap_open() failed due to [%s]\n", errbuf);
+            exit(1);
+        }
+    }
+    else{
+        pcap_set_immediate_mode(handle[index], 1);
+        if(pcap_activate(handle[index])!=0){
+            printf("cannot activate sniffer [%s]\n", errbuf);
             exit(1);
         }
     }

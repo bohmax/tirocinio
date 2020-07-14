@@ -17,7 +17,7 @@ uint16_t* setkeyHash(uint16_t key);
 stat_t* setStat(void);
 
 /* funzioni per inizializzare e liberare elementi che verrano inseriti nella lista*/
-rtp* setElRTP(u_char* buf, int size, long timestamp, int npkt, int from_thr);
+rtp* setElRTP(u_char* buf, int size, double timestamp, int npkt, int from_thr);
 
 void freeRTP(void** el); //list è un elemento occhio al nome
 

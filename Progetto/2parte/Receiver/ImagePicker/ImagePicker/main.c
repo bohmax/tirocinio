@@ -46,7 +46,7 @@ int num_list = 1, from_port = 5000, stat_port = DPORT, video_port = DPORT,stat_i
 char ip_sender[DIM_IP];
 
 void set_pipe(){
-    pipe_plot = popen("python3 ImagePicker/plot.py", "w");
+    pipe_plot = popen("python3 ImagePicker1/plot.py", "w");
     if (pipe_plot == NULL) {
         printf("popen error\n");
         exit(1);
@@ -90,7 +90,7 @@ void set_handler(char device_name[], int index, struct bpf_program* fp, char fil
         }
     }
     else{
-        pcap_set_immediate_mode(handle[index], 1);
+        //pcap_set_immediate_mode(handle[index], 1); // togliere il commento se il proprio sistema lo supporta senza droppare pacchetti
         if(pcap_activate(handle[index])!=0){
             printf("cannot activate sniffer [%s]\n", errbuf);
             exit(1);

@@ -117,7 +117,7 @@ void fill_losted_packet(uint16_t* prec, uint16_t* from, rtp* el, gop_info* info)
         return;
         
     while ((*prec)+1 != *from) {
-        info->losted_packet[info->index_losted] = *prec;
+        info->losted_packet[info->index_losted] = (*prec)+1;
         info->index_losted++;
         info->len_losted[info->index_len]++;
         (*prec)++;
@@ -179,7 +179,7 @@ void* insert_hash(uint16_t primarykey, void* insert){
     void* ris = icl_hash_insert(hash_packet, key, insert);
     pthread_mutex_unlock(&mtxhash[mtxi]);
     if (!ris)
-        freeKeyHash(key);
+        freeKeyHash(key); // si libera key
     return ris;
 }
 

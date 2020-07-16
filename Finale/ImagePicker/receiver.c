@@ -70,24 +70,6 @@ void stat_calc(rtp* el, int index, uint16_t rtp_id, double pkt_timestamp){
     }
 }
 
-/*void create_header_information(u_char* rtpdata, unsigned int fragment_type, int rtpdata_len, uint16_t seq_num){
- if(fragment_type == 7){
- starter(&metadata);
- add(&metadata, rtpdata, rtpdata_len);  // SPS information
- }
- else if (fragment_type == 8){
- starter(&metadata);
- add(&metadata, rtpdata, rtpdata_len);  // PPS information
- pthread_mutex_lock(&mtx_info);
- info->end_last_gop = seq_num; //setto il primo gop assoluto
- info->start_seq = seq_num+1;
- info->accepted28 = seq_num+1;
- printf("start new gop [%d]\n", seq_num+1);
- pthread_mutex_unlock(&mtx_info);
- inizialized = 1;
- }
- }*/
-
 int addPacketToGOP(u_char* rtpdata, int rtpdata_len, uint16_t seq_num, rtp* el){
     int return_value = 0;
     //Nal header

@@ -47,18 +47,8 @@ void* Segnali(void *arg){
     /* invia chiusura gop thread */
     for (int i = 0; i < num_list; i++) {
         pthread_kill(listener[i], SIGALRM); //invia segnali a listener per sbloccarlo da pcap loop
-        send_close(&testa_gop, &coda_gop, &mtx_gop, &cond_gop, NULL, setElRTP(NULL, -1, -1, -1, -1));
-        usleep(2000000); // per dare al tempo ad ogni Thread di svegliare il thread
+        usleep(3000000); // per dare al tempo ad ogni Thread di svegliare il thread
     }
-    send_close(&testa_ord, &coda_ord, &mtx_ord, &cond_ord, &freeGOP, setElGOP(-1, -1));
-    //svuota la lista di decodifica
-    pthread_mutex_lock(&mtx_dec);
-    freeList(&testa_dec, &coda_dec, &freeGOP);
-    for (int i = 0; i < num_decoder; i++) {
-        pushList(&testa_dec, &coda_dec, setElGOP(-1, -1));
-        pthread_cond_signal(&cond_dec);
-    }
-    pthread_mutex_unlock(&mtx_dec);
     printf("Thread segnali chiuso\n");
     return (void*) 0;
 }
@@ -202,12 +192,14 @@ void* ReaderPacket(void* arg){
     }
     free(from);
     freeGOP((void**)&el);
+    //svuota la lista di decodifica
+    pthread_mutex_lock(&mtx_dec);
+    freeList(&testa_dec, &coda_dec, &freeGOP);
     for (int i = 0; i < num_decoder; i++) {
-        pthread_mutex_lock(&mtx_dec);
         pushList(&testa_dec, &coda_dec, setElGOP(-1, -1));
         pthread_cond_signal(&cond_dec);
-        pthread_mutex_unlock(&mtx_dec);
     }
+    pthread_mutex_unlock(&mtx_dec);
     for (int i = 0; i < num_decoder; i++)
         SYSFREE(ret,pthread_join(decodehandler[i],NULL),0,"decode 1")
     printf("Thread per salvare il GOP chiude\n");
@@ -256,11 +248,8 @@ void* GOPThread(void* arg){
     info = NULL;
     pthread_mutex_unlock(&mtx_info);
     
-    pthread_mutex_lock(&mtx_ord);
     if (copy)
-        pushList(&testa_ord, &coda_ord, copy);
-    pthread_cond_signal(&cond_ord);
-    pthread_mutex_unlock(&mtx_ord);
+        send_close(&testa_ord, &coda_ord, &mtx_ord, &cond_ord, &freeGOP, copy);
     printf("Thread che crea GOP esce %d\n", num_thr);
     return (void*) 0;
 }
@@ -279,10 +268,7 @@ void* listenerThread(void* arg){
     SYSFREE(ret,pthread_create(&gophandler,NULL,&GOPThread,num_thr),0,"thread")
     pcap_loop(handle[*num_thr], -1, sniff, (u_char*) num_thr);
     printf("Thread listener %d stopped sniffing\n", *num_thr);
-    pthread_mutex_lock(&mtx_gop);
-    pushList(&testa_gop, &coda_gop, setElRTP(NULL, -1,-1, -1, -1));
-    pthread_cond_signal(&cond_gop);
-    pthread_mutex_unlock(&mtx_gop);
+    send_close(&testa_gop, &coda_gop, &mtx_gop, &cond_gop, NULL, setElRTP(NULL, -1, -1, -1, -1));
     SYSFREE(ret,pthread_join(gophandler,NULL),0,"gop 1")
     printf("Thread listener esce %d\n", *num_thr);
     free(num_thr);

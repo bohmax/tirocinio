@@ -81,18 +81,11 @@ void get_loopback(pcap_if_t* alldevs,char name[] ,char errbuf[]){
 void set_handler(char device_name[], int index, struct bpf_program* fp, char filter[], char errbuf[]){
     bpf_u_int32 pMask;            /* subnet mask */
     bpf_u_int32 pNet;             /* ip address*/
-    handle[index] = pcap_create(device_name, errbuf);//(device_name, MAXBUF, 0, 100, errbuf); //ottengo uno sniffer
+    handle[index] = pcap_open_live(device_name, MAXBUF, 0, 100, errbuf); //ottengo uno sniffer
     if(handle[index] == NULL){
         handle[index] = pcap_open_offline(device_name, errbuf);
         if(handle == NULL){
             printf("pcap_open() failed due to [%s]\n", errbuf);
-            exit(1);
-        }
-    }
-    else{
-        //pcap_set_immediate_mode(handle[index], 1); // togliere il commento se il proprio sistema lo supporta senza droppare pacchetti
-        if(pcap_activate(handle[index])!=0){
-            printf("cannot activate sniffer [%s]\n", errbuf);
             exit(1);
         }
     }
@@ -217,8 +210,8 @@ int main(int argc, const char * argv[]) {
     pthread_cond_signal(&cond_ord);
     pthread_mutex_unlock(&mtx_ord);
     SYSFREE(notused,pthread_join(order,NULL),0,"join order")
-    SYSFREE(notused,pthread_join(stat_thr,NULL),0,"join statistiche")
     pthread_kill(segnal, SIGINT); //manda un segnale al thread
+    SYSFREE(notused,pthread_join(stat_thr,NULL),0,"join statistiche")
     SYSFREE(notused,pthread_join(segnal,NULL),0,"join 1")
     printf("Uscita dal programma\n");
     for (int i = 0; i < num_list; i++) {
@@ -228,9 +221,9 @@ int main(int argc, const char * argv[]) {
     if (!from_loopback)
         pcap_close(loopback);
     pcap_freealldevs(alldevs);
-    freeList(&testa_gop, &coda_gop, &freeRTP);
-    freeList(&testa_dec, &coda_dec, &freeGOP);
-    freeList(&testa_ord, &coda_ord, &freeGOP);
+    //freeList(&testa_gop, &coda_gop, &freeRTP);
+    //freeList(&testa_dec, &coda_dec, &freeGOP);
+    //freeList(&testa_ord, &coda_ord, &freeGOP);
     icl_hash_destroy(hash_packet, &freeKeyHash, &freeElHash);
     free(fp);
     free(handle);

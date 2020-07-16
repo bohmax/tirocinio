@@ -18,6 +18,7 @@
 #include <errno.h>
 #include <pthread.h>
 #include <signal.h>
+#include <arpa/inet.h>
 #include <net/ethernet.h>
 #include <netinet/ip.h>
 #include <netinet/udp.h>

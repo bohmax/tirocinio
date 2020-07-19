@@ -36,7 +36,7 @@ sudo pip3 install pyqtgraph
 sudo pip3 install scipy
 sudo pip3 install opencv-python
 ```
-##Esecuzione
+## Esecuzione
 Prima di eseguire il simulatore estrarre il file Simulatore.zip eseguendo i seguenti comandi e ci si rechi nella cartella appena creata coi comandi:
 ```
 unzip Simulatore.zip
